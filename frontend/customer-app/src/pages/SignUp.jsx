@@ -69,7 +69,7 @@ export default function SignUp() {
     setIsLoading(true);
     
     try {
-      const response = await signUp({
+      await signUp({
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password
