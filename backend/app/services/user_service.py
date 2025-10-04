@@ -1,39 +1,34 @@
-from passlib.context import CryptContext
 from database import db
-from datetime import datetime
+from datetime import datetime, timedelta
 import secrets
 from config import SESSION_EXPIRE_MINUTES
-from datetime import timedelta
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
-
+# Generate a random session token
 def generate_session_token():
     return secrets.token_hex(32)
 
+# Compute session expiry time
 def get_expiry_time():
     return datetime.utcnow() + timedelta(minutes=SESSION_EXPIRE_MINUTES)
 
-# Create customer
+# Create a new customer (password stored as plain text)
 async def create_customer(user_data: dict):
     existing = await db.users.find_one({"email": user_data["email"]})
     if existing:
         return None  # Email already exists
 
-    user_data["password"] = hash_password(user_data["password"])
-    user_data["role"] = "customer"
+    user_data["role"] = "customer"  # assign role
     await db.users.insert_one(user_data)
-    return {"email": user_data["email"], "full_name": user_data["full_name"], "role": "customer"}
+    return {
+        "email": user_data["email"],
+        "full_name": user_data["full_name"],
+        "role": "customer"
+    }
 
-# Customer login
+# Customer login (plain-text comparison)
 async def customer_login(email: str, password: str):
     user = await db.users.find_one({"email": email, "role": "customer"})
-    if not user or not verify_password(password, user["password"]):
+    if not user or user["password"] != password:
         return None
 
     token = generate_session_token()
@@ -46,4 +41,8 @@ async def customer_login(email: str, password: str):
         "expires_at": expiry
     })
 
-    return {"session_token": token, "expires_at": expiry, "email": email}
+    return {
+        "session_token": token,
+        "expires_at": expiry,
+        "email": email
+    }

@@ -1,18 +1,18 @@
-// src/services/api.js
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api', // Update with your FastAPI backend URL
+  baseURL: "http://localhost:8000", // Your FastAPI backend URL
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// Add response interceptor for error handling
+// Optional: global response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    return Promise.reject(error);
+    // Forward backend errors
+    return Promise.reject(error.response?.data || error.message);
   }
 );
 

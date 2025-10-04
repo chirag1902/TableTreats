@@ -1,21 +1,18 @@
-// src/pages/SignUp.jsx
+// src/pages/Login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
-import { signUp } from "../services/authService";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { login } from "../services/authService";
 
-export default function SignUp() {
+export default function Login() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    full_name: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
 
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: "", text: "" });
 
@@ -30,12 +27,6 @@ export default function SignUp() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.full_name.trim()) {
-      newErrors.full_name = "Full name is required";
-    } else if (formData.full_name.trim().length < 2) {
-      newErrors.full_name = "Full name must be at least 2 characters";
-    }
-
     if (!formData.email) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -44,14 +35,6 @@ export default function SignUp() {
 
     if (!formData.password) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
     }
 
     return newErrors;
@@ -69,26 +52,25 @@ export default function SignUp() {
     setIsLoading(true);
 
     try {
-      await signUp({
-        full_name: formData.full_name,
+      await login({
         email: formData.email,
         password: formData.password,
       });
 
       setSubmitMessage({
         type: "success",
-        text: "Account created successfully! Redirecting to login...",
+        text: "Login successful! Redirecting...",
       });
 
-      // Redirect to login after 2 seconds
+      // Redirect to dashboard or home after 1 second
       setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+        navigate("/dashboard"); // Change to your desired route
+      }, 1000);
     } catch (error) {
       const errorMessage =
         error.detail ||
         error.message ||
-        "Something went wrong. Please try again.";
+        "Invalid email or password. Please try again.";
       setSubmitMessage({
         type: "error",
         text: errorMessage,
@@ -109,9 +91,9 @@ export default function SignUp() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Create Account
+            Welcome Back
           </h1>
-          <p className="text-gray-600">Sign up to get started</p>
+          <p className="text-gray-600">Log in to your account</p>
         </div>
 
         {submitMessage.text && (
@@ -127,36 +109,6 @@ export default function SignUp() {
         )}
 
         <div className="space-y-5">
-          <div>
-            <label
-              htmlFor="full_name"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Full Name
-            </label>
-            <div className="relative">
-              <User
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                id="full_name"
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleChange}
-                onKeyPress={handleKeyPress}
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition ${
-                  errors.full_name ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="John Doe"
-              />
-            </div>
-            {errors.full_name && (
-              <p className="mt-1 text-sm text-red-600">{errors.full_name}</p>
-            )}
-          </div>
-
           <div>
             <label
               htmlFor="email"
@@ -224,43 +176,20 @@ export default function SignUp() {
             )}
           </div>
 
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Confirm Password
-            </label>
-            <div className="relative">
-              <Lock
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
+          <div className="flex items-center justify-between">
+            <label className="flex items-center">
               <input
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                onKeyPress={handleKeyPress}
-                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition ${
-                  errors.confirmPassword ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="••••••••"
+                type="checkbox"
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.confirmPassword}
-              </p>
-            )}
+              <span className="ml-2 text-sm text-gray-600">Remember me</span>
+            </label>
+            <button
+              type="button"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Forgot password?
+            </button>
           </div>
 
           <button
@@ -268,17 +197,17 @@ export default function SignUp() {
             disabled={isLoading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Creating Account..." : "Sign Up"}
+            {isLoading ? "Logging in..." : "Log In"}
           </button>
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{" "}
+          Don't have an account?{" "}
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/signup")}
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
-            Log in
+            Sign up
           </button>
         </p>
       </div>
