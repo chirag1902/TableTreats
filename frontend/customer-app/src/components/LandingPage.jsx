@@ -51,10 +51,40 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                T
+              <div className="w-12 h-12 relative">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  <defs>
+                    <linearGradient id="logoGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style={{ stopColor: '#ff6b6b', stopOpacity: 1 }} />
+                      <stop offset="100%" style={{ stopColor: '#ee5a6f', stopOpacity: 1 }} />
+                    </linearGradient>
+                    <linearGradient id="logoGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style={{ stopColor: '#a855f7', stopOpacity: 1 }} />
+                      <stop offset="100%" style={{ stopColor: '#7c3aed', stopOpacity: 1 }} />
+                    </linearGradient>
+                  </defs>
+                  
+                  {/* Letter T shape with modern twist */}
+                  <rect x="20" y="15" width="60" height="12" rx="6" fill="url(#logoGrad1)"/>
+                  <rect x="44" y="15" width="12" height="70" rx="6" fill="url(#logoGrad2)"/>
+                  
+                  {/* Plate at bottom of T */}
+                  <ellipse cx="50" cy="78" rx="22" ry="8" fill="url(#logoGrad1)" opacity="0.3"/>
+                  <ellipse cx="50" cy="75" rx="20" ry="6" fill="url(#logoGrad1)"/>
+                  
+                  {/* Small food/dining elements on the plate */}
+                  <circle cx="42" cy="73" r="2.5" fill="white" opacity="0.9"/>
+                  <circle cx="50" cy="72" r="3" fill="white" opacity="0.9"/>
+                  <circle cx="58" cy="73" r="2.5" fill="white" opacity="0.9"/>
+                  
+                  {/* Sparkle/star effects for "treats" */}
+                  <path d="M 15 35 L 17 40 L 12 40 Z" fill="#fbbf24"/>
+                  <path d="M 85 45 L 87 50 L 82 50 Z" fill="#fbbf24"/>
+                  <circle cx="25" cy="65" r="1.5" fill="#fbbf24"/>
+                  <circle cx="75" cy="30" r="1.5" fill="#fbbf24"/>
+                </svg>
               </div>
-              <div className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+              <div className="text-2xl font-bold text-white">
                 Tabletreats
               </div>
             </div>
@@ -72,7 +102,7 @@ export default function LandingPage() {
               </button>
               <button 
                 onClick={() => handleNavigate('/signup')}
-                className="px-6 py-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/50 transition-all hover:scale-105"
+                className="px-6 py-2 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/50 transition-all hover:scale-105"
               >
                 Get Started
               </button>
@@ -106,7 +136,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="text-white space-y-8">
               <div className="inline-block px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-4">
-                <span className="text-sm font-semibold">The Future of Dining is Here</span>
+                <span className="text-sm font-semibold">More Than Just a Meal</span>
               </div>
               <h1 className="text-6xl md:text-7xl font-extrabold leading-tight">
                 Your Complete
@@ -146,10 +176,6 @@ export default function LandingPage() {
                 <div>
                   <div className="text-4xl font-bold">50K+</div>
                   <div className="text-white/70">Happy Diners</div>
-                </div>
-                <div>
-                  <div className="text-4xl font-bold">4.9★</div>
-                  <div className="text-white/70">App Rating</div>
                 </div>
               </div>
             </div>
@@ -279,7 +305,8 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-12 relative">
-            <div className="hidden md:block absolute top-24 left-1/4 right-1/4 h-1 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500"></div>
+            <div className="hidden md:block absolute top-24 left-0 w-1/3 h-1 bg-gradient-to-r from-pink-500 to-purple-500"></div>
+            <div className="hidden md:block absolute top-24 right-0 w-1/3 h-1 bg-gradient-to-r from-purple-500 to-pink-500"></div>
             
             {steps.map((step, idx) => (
               <div key={idx} className="text-center relative">
@@ -334,7 +361,7 @@ export default function LandingPage() {
 
       <footer className="bg-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-5 gap-12 mb-12">
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
@@ -343,15 +370,6 @@ export default function LandingPage() {
                 <div className="text-2xl font-bold">Tabletreats</div>
               </div>
               <p className="text-gray-400 mb-6">Your complete dine-in experience in one app. Discover, reserve, and enjoy!</p>
-            </div>
-            <div>
-              <h4 className="font-bold text-lg mb-4">Company</h4>
-              <ul className="space-y-3 text-gray-400">
-                <li><a href="#about" className="hover:text-pink-500 transition-colors">About Us</a></li>
-                <li><a href="#careers" className="hover:text-pink-500 transition-colors">Careers</a></li>
-                <li><a href="#press" className="hover:text-pink-500 transition-colors">Press</a></li>
-                <li><a href="#blog" className="hover:text-pink-500 transition-colors">Blog</a></li>
-              </ul>
             </div>
             <div>
               <h4 className="font-bold text-lg mb-4">For Restaurants</h4>
