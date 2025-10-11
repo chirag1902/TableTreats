@@ -1,19 +1,19 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import SignUp from './pages/Signup';
-import SignIn from './pages/SignIn';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Landing   from './pages/Landing';
+import SignIn    from './pages/SignIn';
+import SignUp    from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
 
-function App() {
+export default function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/"        element={<Landing />} />
+        <Route path="/signin"  element={<SignIn />} />
+        <Route path="/signup"  element={<SignUp />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 
-export default App;

@@ -1,89 +1,127 @@
 // src/pages/SignUp.jsx
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import sideImg from "../assets/auth-side.png"; // same candlelight restaurant image
 
 export default function SignUp() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    restaurant_name: '',
-    email: '',
-    password: '',
-    phone_number: '',
-    address: '',
+    restaurant_name: "",
+    email: "",
+    password: "",
+    phone_number: "",
+    address: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const [hover, setHover] = useState(false);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     try {
-      // fake API call --------------------------------------------------
-      await new Promise((r) => setTimeout(r, 1500));
-      localStorage.setItem('restaurant_token', 'dummy-token');
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Something went wrong');
+      await new Promise((r) => setTimeout(r, 1500)); // fake API call
+      localStorage.setItem("restaurant_token", "dummy-token");
+      navigate("/dashboard");
+    } catch {
+      setError("Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ----------  tiny inline styles  ---------- */
-  const styles = {
-    page: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100vh',
-      backgroundColor: '#f5f7fa',
-      margin: 0,
-      padding: 16,
-      boxSizing: 'border-box',
-    },
-    card: {
-      width: '100%',
-      maxWidth: 400,
-      backgroundColor: '#fff',
-      padding: '32px 40px',
-      borderRadius: 8,
-      boxShadow: '0 4px 12px rgba(0,0,0,.15)',
-    },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: '#333' },
-    subtitle: { fontSize: 14, color: '#666', marginBottom: 24 },
-    input: {
-      width: '100%',
-      padding: '10px 12px',
-      marginBottom: 16,
-      border: '1px solid #ccc',
-      borderRadius: 4,
-      fontSize: 14,
-    },
-    button: {
-      width: '100%',
-      padding: '12px 0',
-      backgroundColor: loading ? '#90cdf4' : '#3182ce',
-      color: '#fff',
-      border: 'none',
-      borderRadius: 4,
-      fontSize: 16,
-      cursor: loading ? 'not-allowed' : 'pointer',
-    },
-    link: { color: '#3182ce', textDecoration: 'none' },
+  // ---------- styles ----------
+  const container = {
+    height: "100vh",
+    width: "100vw",
+    backgroundImage: `url(${sideImg})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    overflow: "hidden",
+    fontFamily: "'Poppins', sans-serif",
   };
 
-  /* ----------  JSX  ---------- */
-  return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Create Account</h2>
-        <p style={styles.subtitle}>Sign up to get started</p>
+  const overlay = {
+    position: "absolute",
+    inset: 0,
+    background: "rgba(0, 0, 0, 0.55)",
+    backdropFilter: "blur(5px)",
+  };
 
-        {error && <p style={{ color: 'red', marginBottom: 12 }}>{error}</p>}
+  const card = {
+    position: "relative",
+    zIndex: 2,
+    width: "100%",
+    maxWidth: 450,
+    background: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 16,
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+    backdropFilter: "blur(15px)",
+    padding: "40px 36px",
+    textAlign: "center",
+    color: "#fff",
+  };
+
+  const title = {
+    fontSize: 28,
+    fontWeight: 600,
+    marginBottom: 10,
+  };
+
+  const subtitle = {
+    fontSize: 14,
+    color: "#eee",
+    marginBottom: 28,
+  };
+
+  const input = {
+    width: "100%",
+    padding: "12px 14px",
+    marginBottom: 16,
+    border: "none",
+    borderRadius: 8,
+    fontSize: 15,
+    background: "rgba(255,255,255,0.85)",
+    outline: "none",
+  };
+
+  const button = {
+    width: "100%",
+    padding: "12px 0",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 16,
+    fontWeight: 600,
+    color: "#fff",
+    backgroundColor: hover ? "#2c5282" : "#3182ce",
+    cursor: loading ? "not-allowed" : "pointer",
+    transition: "0.3s ease",
+  };
+
+  const link = {
+    color: "#90cdf4",
+    textDecoration: "none",
+    fontWeight: 500,
+  };
+
+  return (
+    <div style={container}>
+      <div style={overlay}></div>
+
+      <div style={card}>
+        <h2 style={title}>Create Account</h2>
+        <p style={subtitle}>Sign up to get started</p>
+
+        {error && <p style={{ color: "salmon", marginBottom: 12 }}>{error}</p>}
 
         <form onSubmit={handleSubmit}>
           <input
@@ -93,7 +131,7 @@ export default function SignUp() {
             required
             value={form.restaurant_name}
             onChange={handleChange}
-            style={styles.input}
+            style={input}
           />
           <input
             type="email"
@@ -102,7 +140,7 @@ export default function SignUp() {
             required
             value={form.email}
             onChange={handleChange}
-            style={styles.input}
+            style={input}
           />
           <input
             type="password"
@@ -111,7 +149,7 @@ export default function SignUp() {
             required
             value={form.password}
             onChange={handleChange}
-            style={styles.input}
+            style={input}
           />
           <input
             type="text"
@@ -119,7 +157,7 @@ export default function SignUp() {
             placeholder="Phone (optional)"
             value={form.phone_number}
             onChange={handleChange}
-            style={styles.input}
+            style={input}
           />
           <input
             type="text"
@@ -127,17 +165,23 @@ export default function SignUp() {
             placeholder="Address (optional)"
             value={form.address}
             onChange={handleChange}
-            style={styles.input}
+            style={input}
           />
 
-          <button type="submit" style={styles.button} disabled={loading}>
-            {loading ? 'Creating account…' : 'Sign Up'}
+          <button
+            type="submit"
+            style={button}
+            disabled={loading}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+          >
+            {loading ? "Creating account…" : "Sign Up"}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13 }}>
-          Already have an account?{' '}
-          <Link to="/" style={styles.link}>
+        <p style={{ marginTop: 20, fontSize: 14 }}>
+          Already have an account?{" "}
+          <Link to="/" style={link}>
             Sign in
           </Link>
         </p>
