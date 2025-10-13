@@ -1,7 +1,7 @@
-// src/pages/SignUp.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import sideImg from "../assets/auth-side.png"; // same candlelight restaurant image
+import { restaurantSignup } from "../api/restaurant"; // your backend API call
+import sideImg from "../assets/auth-side.png"; // background image
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ export default function SignUp() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [hover, setHover] = useState(false);
 
   const handleChange = (e) =>
@@ -22,13 +23,18 @@ export default function SignUp() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 1500)); // fake API call
-      localStorage.setItem("restaurant_token", "dummy-token");
-      navigate("/dashboard");
-    } catch {
-      setError("Something went wrong");
+      const data = await restaurantSignup(form);
+      setSuccess(data.message || "Restaurant registered successfully!");
+      // Redirect after a short delay
+      setTimeout(() => navigate("/signin"), 2000);
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(
+        err.response?.data?.detail || "Signup failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -122,6 +128,7 @@ export default function SignUp() {
         <p style={subtitle}>Sign up to get started</p>
 
         {error && <p style={{ color: "salmon", marginBottom: 12 }}>{error}</p>}
+        {success && <p style={{ color: "#90ee90", marginBottom: 12 }}>{success}</p>}
 
         <form onSubmit={handleSubmit}>
           <input
@@ -181,7 +188,7 @@ export default function SignUp() {
 
         <p style={{ marginTop: 20, fontSize: 14 }}>
           Already have an account?{" "}
-          <Link to="/" style={link}>
+          <Link to="/signin" style={link}>
             Sign in
           </Link>
         </p>

@@ -1,13 +1,14 @@
-// src/pages/SignIn.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import sideImg from "../assets/auth-side.png"; // restaurant candle image
+import { restaurantLogin } from "../api/restaurant"; // ✅ connect to backend
+import sideImg from "../assets/auth-side.png"; // background image
 
 export default function SignIn() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [hover, setHover] = useState(false);
 
   const handleChange = (e) =>
@@ -16,19 +17,24 @@ export default function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 1200)); // simulate API
-      localStorage.setItem("restaurant_token", "dummy-token");
-      navigate("/dashboard");
-    } catch {
-      setError("Something went wrong");
+      const data = await restaurantLogin(form);
+
+      // backend should return something like { message: "Login successful" }
+      setSuccess(data.message || "Login successful!");
+      // Redirect to dashboard
+      setTimeout(() => navigate("/dashboard"), 1500);
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.response?.data?.detail || "Invalid credentials");
     } finally {
       setLoading(false);
     }
   };
 
-  // Styles
+  // ---------- styles ----------
   const container = {
     height: "100vh",
     width: "100vw",
@@ -41,6 +47,7 @@ export default function SignIn() {
     justifyContent: "center",
     position: "relative",
     overflow: "hidden",
+    fontFamily: "'Poppins', sans-serif",
   };
 
   const overlay = {
@@ -115,6 +122,7 @@ export default function SignIn() {
         <p style={subtitle}>Welcome back! Sign in to your account.</p>
 
         {error && <p style={{ color: "salmon", marginBottom: 12 }}>{error}</p>}
+        {success && <p style={{ color: "#90ee90", marginBottom: 12 }}>{success}</p>}
 
         <form onSubmit={handleSubmit}>
           <input
