@@ -1,49 +1,70 @@
+// src/services/authService.js
 import api from "./api";
 
 export const signUp = async (userData) => {
   try {
     const response = await api.post("/auth/customers/signup", {
-      full_name: userData.full_name, // matches backend schema
+      full_name: userData.full_name,
       email: userData.email,
       password: userData.password,
     });
     return response.data;
   } catch (err) {
-    // Always throw an object with a 'detail' property
-    if (err.response && err.response.data) {
-      throw err.response.data; // backend error
-    } else {
-      throw { detail: err.message }; // fallback
-    }
+    // Extract error message from various possible formats
+    const errorDetail =
+      err?.detail ||
+      err?.message ||
+      err?.error ||
+      "Signup failed. Please try again.";
+
+    throw { detail: errorDetail };
   }
 };
 
 export const login = async (credentials) => {
   try {
     const response = await api.post("/auth/customers/login", credentials);
-    return response.data;
-  } catch (err) {
-    if (err.response && err.response.data) {
-      throw err.response.data;
-    } else {
-      throw { detail: err.message };
+    const data = response.data;
+
+    // Store JWT token
+    if (data.access_token || data.token) {
+      const token = data.access_token || data.token;
+
+      // Set token in axios headers for future requests
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      // Return both token and user data for the component to handle
+      return {
+        token,
+        user: {
+          name: data.user?.full_name || data.full_name || "Guest",
+          email: data.user?.email || data.email || credentials.email,
+          location: data.user?.location || data.location || "New Brunswick, NJ",
+        },
+      };
     }
+
+    throw { detail: "No authentication token received" };
+  } catch (err) {
+    const errorDetail =
+      err?.detail ||
+      err?.message ||
+      err?.error ||
+      "Login failed. Please check your credentials.";
+
+    throw { detail: errorDetail };
   }
 };
 
-// export const logIn = async (credentials) => {
-//   const response = await fetch("YOUR_API_ENDPOINT/login", {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//     },
-//     body: JSON.stringify(credentials),
-//   });
+export const logout = () => {
+  // Remove token from axios headers
+  delete api.defaults.headers.common["Authorization"];
+};
 
-//   if (!response.ok) {
-//     const error = await response.json();
-//     throw error;
-//   }
-
-//   return response.json();
-// };
+export const setAuthToken = (token) => {
+  if (token) {
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common["Authorization"];
+  }
+};

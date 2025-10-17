@@ -52,21 +52,31 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login({
+      const result = await login({
         email: formData.email,
         password: formData.password,
       });
+
+      // Validate that we have the required data
+      if (!result || !result.token || !result.user) {
+        throw { detail: "Invalid response from server" };
+      }
 
       setSubmitMessage({
         type: "success",
         text: "Login successful! Redirecting...",
       });
 
-      // Redirect to dashboard or home after 1 second
+      // Store auth data in sessionStorage
+      sessionStorage.setItem("authToken", result.token);
+      sessionStorage.setItem("userData", JSON.stringify(result.user));
+
+      // Redirect to dashboard after short delay
       setTimeout(() => {
-        navigate("/dashboard"); // Change to your desired route
+        navigate("/dashboard", { replace: true });
       }, 1000);
     } catch (error) {
+      console.error("Login error:", error);
       const errorMessage =
         error.detail ||
         error.message ||

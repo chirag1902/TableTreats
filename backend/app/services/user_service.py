@@ -1,3 +1,4 @@
+# services/user_service.py
 from database import Customer_db
 from utils.auth import hash_password, verify_password, create_access_token
 from datetime import timedelta
@@ -35,11 +36,15 @@ async def customer_login(email: str, password: str):
         expires_delta=access_token_expires
     )
 
+    # Return user data along with token
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "email": email,
-        "role": "customer"
+        "user": {
+            "email": email,
+            "full_name": user.get("full_name", ""),
+            "role": "customer"
+        }
     }
 
 async def get_customer_by_email(email: str):
