@@ -13,3 +13,9 @@ class CustomerOut(BaseModel):
     email: EmailStr
     full_name: str
     role: str = "customer"
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    email: str
+    role: str
