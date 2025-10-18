@@ -1,5 +1,15 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from .config import MONGO_URI, MONGO_DB
+# app/database.py
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
+from app.config import MONGO_URI, DATABASE_NAME
 
+# MongoDB client
 client = AsyncIOMotorClient(MONGO_URI)
-db = client[MONGO_DB]
+db = client['restaurant_db']
+
+# GridFS bucket for storing images
+fs = AsyncIOMotorGridFSBucket(db)
+
+# Collections
+restaurants_collection = db.restaurants
+customers_collection = db.customers
+reservations_collection = db.reservations
