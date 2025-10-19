@@ -1,4 +1,4 @@
-from database import Resturant_MONGO_DB
+from database import Restaurant_db
 from bson import ObjectId
 from typing import Optional, List, Dict
 
@@ -18,7 +18,7 @@ async def get_restaurants(
     if cuisine:
         query["cuisines"] = {"$in": [cuisine]}
     
-    cursor = Resturant_MONGO_DB.restaurants.find(query).skip(skip).limit(limit)
+    cursor = Restaurant_db.restaurants.find(query).skip(skip).limit(limit)
     restaurants = await cursor.to_list(length=limit)
     
     result = []
@@ -30,7 +30,7 @@ async def get_restaurants(
 async def get_restaurant_by_id(restaurant_id: str) -> Optional[Dict]:
     """Get detailed restaurant information by ID"""
     try:
-        restaurant = await Resturant_MONGO_DB.restaurants.find_one({
+        restaurant = await Restaurant_db.restaurants.find_one({
             "_id": ObjectId(restaurant_id),
             "is_onboarded": True
         })
@@ -59,7 +59,7 @@ async def search_restaurants(
         ]
     }
     
-    cursor = Resturant_MONGO_DB.restaurants.find(search_filter).skip(skip).limit(limit)
+    cursor = Restaurant_db.restaurants.find(search_filter).skip(skip).limit(limit)
     restaurants = await cursor.to_list(length=limit)
     
     result = []

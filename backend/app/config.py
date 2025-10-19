@@ -5,8 +5,8 @@ load_dotenv()  # take environment variables from .env
 
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
 Customer_MONGO_DB = "customer_db"
-Resturant_MONGO_DB = "restaurant_db"
-fs = AsyncIOMotorGridFSBucket(Restaurant_db)
+Restaurant_MONGO_DB = "restaurant_db"
+
 
 
 # JWT Configuration
