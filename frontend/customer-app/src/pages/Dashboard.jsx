@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, MapPin, User, LogOut, Star } from "lucide-react";
 import { logout } from "../services/authService";
+import { getAllRestaurants, searchRestaurants } from "../services/restaurantService";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -10,37 +11,10 @@ export default function Dashboard() {
   const [selectedFilter, setSelectedFilter] = useState("All Restaurants");
   const [userName, setUserName] = useState("Guest");
   const [userLocation, setUserLocation] = useState("New Brunswick, NJ");
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check authentication
-    const token = sessionStorage.getItem("authToken");
-    const userDataStr = sessionStorage.getItem("userData");
-
-    if (!token || !userDataStr) {
-      navigate("/login");
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(userDataStr);
-      setUserName(userData.name || "Guest");
-      setUserLocation(userData.location || "New Brunswick, NJ");
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      navigate("/login");
-    }
-
-    // Listen for logout events from API interceptor
-    const handleAuthLogout = () => {
-      sessionStorage.removeItem("authToken");
-      sessionStorage.removeItem("userData");
-      navigate("/login");
-    };
-
-    window.addEventListener("auth:logout", handleAuthLogout);
-    return () => window.removeEventListener("auth:logout", handleAuthLogout);
-  }, [navigate]);
 
   const categories = [
     { name: "Italian", emoji: "🍝", gradient: "from-red-500 to-orange-500" },
@@ -62,85 +36,92 @@ export default function Dashboard() {
     { name: "New Arrivals", icon: "🆕" },
   ];
 
-  const featuredDeals = [
-    {
-      id: 1,
-      name: "Bella Italia Trattoria",
-      cuisine: "Italian",
-      rating: 4.8,
-      reviews: 324,
-      distance: "0.5 mi",
-      priceRange: "$$",
-      emoji: "🍝",
-      gradient: "from-amber-600 via-orange-500 to-red-600",
-      badge: "25% OFF",
-      badgeColor: "bg-red-500",
-      offer: "Get 25% off your entire bill",
-      timing: "Valid until 10 PM tonight",
-      popular: true,
-    },
-    {
-      id: 2,
-      name: "Sakura Sushi House",
-      cuisine: "Japanese",
-      rating: 4.9,
-      reviews: 456,
-      distance: "0.8 mi",
-      priceRange: "$$",
-      emoji: "🍣",
-      gradient: "from-green-600 via-teal-500 to-blue-400",
-      badge: "BOGO",
-      badgeColor: "bg-green-500",
-      offer: "Buy 1 Get 1 on select rolls",
-      timing: "Happy Hour Special",
-      popular: true,
-    },
-    {
-      id: 3,
-      name: "Prime Steakhouse",
-      cuisine: "Steakhouse",
-      rating: 4.7,
-      reviews: 287,
-      distance: "1.2 mi",
-      priceRange: "$$$",
-      emoji: "🥩",
-      gradient: "from-purple-600 via-pink-500 to-red-500",
-      badge: "30% OFF",
-      badgeColor: "bg-purple-500",
-      offer: "30% off dinner menu",
-      timing: "Today only",
-      popular: false,
-    },
-  ];
+  useEffect(() => {
+    const token = sessionStorage.getItem("authToken");
+    const userDataStr = sessionStorage.getItem("userData");
 
-  const nearbyRestaurants = [
-    {
-      id: 7,
-      name: "Artisan Coffee & Brunch",
-      cuisine: "Cafe",
-      rating: 4.9,
-      reviews: 523,
-      distance: "0.3 mi",
-      priceRange: "$$",
-      emoji: "☕",
-      gradient: "from-pink-300 via-purple-300 to-indigo-300",
-      openNow: true,
-      nextTable: "15 min",
-    },
-    {
-      id: 8,
-      name: "Sweet Dreams Bakery",
-      cuisine: "Desserts",
-      rating: 4.7,
-      reviews: 267,
-      distance: "0.6 mi",
-      priceRange: "$",
-      emoji: "🍰",
-      gradient: "from-yellow-300 via-pink-300 to-purple-300",
-      openNow: true,
-      nextTable: "30 min",
-    },
-  ];
+    if (!token || !userDataStr) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const userData = JSON.parse(userDataStr);
+      setUserName(userData.name || "Guest");
+      setUserLocation(userData.location || "New Brunswick, NJ");
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      navigate("/login");
+    }
+
+    const handleAuthLogout = () => {
+      sessionStorage.removeItem("authToken");
+      sessionStorage.removeItem("userData");
+      navigate("/login");
+    };
+
+    window.addEventListener("auth:logout", handleAuthLogout);
+    return () => window.removeEventListener("auth:logout", handleAuthLogout);
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchRestaurants();
+  }, [selectedCategory, selectedFilter, userLocation]);
+
+  useEffect(() => {
+    const delaySearch = setTimeout(() => {
+      if (searchQuery.trim()) {
+        handleSearch();
+      } else {
+        fetchRestaurants();
+      }
+    }, 500);
+
+    return () => clearTimeout(delaySearch);
+  }, [searchQuery]);
+
+  const fetchRestaurants = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        limit: 20,
+        skip: 0
+      };
+
+      if (selectedCategory !== "All") {
+        params.cuisine = selectedCategory;
+      }
+
+      const data = await getAllRestaurants(params);
+      setRestaurants(data);
+    } catch (err) {
+      setError(err.detail || "Failed to load restaurants");
+      console.error("Error fetching restaurants:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      fetchRestaurants();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await searchRestaurants(searchQuery);
+      setRestaurants(data);
+    } catch (err) {
+      setError(err.detail || "Search failed");
+      console.error("Error searching restaurants:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -149,8 +130,30 @@ export default function Dashboard() {
     navigate("/login");
   };
 
-  const handleReserve = (restaurantName) => {
-    alert(`Reservation page for ${restaurantName} coming soon!`);
+  const handleRestaurantClick = (restaurantId) => {
+    navigate(`/restaurant/${restaurantId}`);
+  };
+
+  const getCategoryEmoji = (cuisines) => {
+    if (!cuisines || cuisines.length === 0) return "🍽️";
+    
+    const cuisine = cuisines[0].toLowerCase();
+    const category = categories.find(cat => 
+      cuisine.includes(cat.name.toLowerCase())
+    );
+    
+    return category ? category.emoji : "🍽️";
+  };
+
+  const getCategoryGradient = (cuisines) => {
+    if (!cuisines || cuisines.length === 0) return "from-gray-400 to-gray-600";
+    
+    const cuisine = cuisines[0].toLowerCase();
+    const category = categories.find(cat => 
+      cuisine.includes(cat.name.toLowerCase())
+    );
+    
+    return category ? category.gradient : "from-gray-400 to-gray-600";
   };
 
   return (
@@ -159,7 +162,6 @@ export default function Dashboard() {
       <header className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            {/* Logo */}
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
                 T
@@ -169,7 +171,6 @@ export default function Dashboard() {
               </span>
             </div>
 
-            {/* Search Bar */}
             <div className="flex-1 max-w-2xl">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -177,13 +178,12 @@ export default function Dashboard() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search restaurants, cuisines, deals..."
+                  placeholder="Search restaurants, cuisines..."
                   className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-full focus:outline-none focus:border-pink-500 transition-colors"
                 />
               </div>
             </div>
 
-            {/* User Actions */}
             <div className="flex items-center gap-3">
               <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
                 <MapPin className="w-4 h-4 text-pink-500" />
@@ -234,9 +234,7 @@ export default function Dashboard() {
                 key={category.name}
                 onClick={() => setSelectedCategory(category.name)}
                 className={`flex flex-col items-center gap-2 min-w-[80px] transition-transform hover:scale-110 ${
-                  selectedCategory === category.name
-                    ? "transform scale-110"
-                    : ""
+                  selectedCategory === category.name ? "transform scale-110" : ""
                 }`}
               >
                 <div
@@ -270,116 +268,104 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Hot Deals Section */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            🔥 Hot Deals For You
-          </h2>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading restaurants...</p>
+            </div>
+          </div>
+        )}
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredDeals.map((restaurant) => (
-              <div
-                key={restaurant.id}
-                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 cursor-pointer"
-              >
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-red-600 text-center">{error}</p>
+          </div>
+        )}
+
+        {/* Restaurants Grid */}
+        {!loading && !error && restaurants.length > 0 && (
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+              {searchQuery ? `Search Results for "${searchQuery}"` : `🍽️ Available Restaurants`}
+            </h2>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {restaurants.map((restaurant) => (
                 <div
-                  className={`h-48 bg-gradient-to-br ${restaurant.gradient} relative flex items-center justify-center`}
+                  key={restaurant.id}
+                  onClick={() => handleRestaurantClick(restaurant.id)}
+                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 cursor-pointer"
                 >
-                  <div className="text-8xl">{restaurant.emoji}</div>
                   <div
-                    className={`absolute top-4 left-4 ${restaurant.badgeColor} text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg`}
+                    className={`h-48 bg-gradient-to-br ${getCategoryGradient(restaurant.cuisine)} relative flex items-center justify-center`}
                   >
-                    {restaurant.badge}
-                  </div>
-                  {restaurant.popular && (
-                    <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                      🔥 Popular
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-5">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {restaurant.name}
-                  </h3>
-
-                  <div className="flex items-center gap-3 text-sm text-gray-600 mb-3">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <span className="font-semibold">{restaurant.rating}</span>
-                      <span>({restaurant.reviews})</span>
-                    </div>
-                    <span>•</span>
-                    <span>{restaurant.cuisine}</span>
+                    {restaurant.thumbnail ? (
+                      <img
+                        src={`http://localhost:8000${restaurant.thumbnail}`}
+                        alt={restaurant.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-8xl">{getCategoryEmoji(restaurant.cuisine)}</div>
+                    )}
                   </div>
 
-                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-3 rounded-xl mb-3">
-                    <p className="text-sm font-semibold text-gray-900 mb-1">
-                      {restaurant.offer}
+                  <div className="p-5">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">
+                      {restaurant.name}
+                    </h3>
+
+                    <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                        <span className="font-semibold">{restaurant.rating}</span>
+                        <span>({restaurant.totalReviews})</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {restaurant.cuisine && restaurant.cuisine.slice(0, 2).map((cuisine, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full"
+                        >
+                          {cuisine}
+                        </span>
+                      ))}
+                    </div>
+
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                      {restaurant.description}
                     </p>
-                    <p className="text-xs text-gray-600">{restaurant.timing}</p>
-                  </div>
 
-                  <button
-                    onClick={() => handleReserve(restaurant.name)}
-                    className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all"
-                  >
-                    Reserve Now
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Nearby Restaurants */}
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            📍 Popular Near You
-          </h2>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {nearbyRestaurants.map((restaurant) => (
-              <div
-                key={restaurant.id}
-                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 cursor-pointer"
-              >
-                <div
-                  className={`h-40 bg-gradient-to-br ${restaurant.gradient} relative flex items-center justify-center`}
-                >
-                  <div className="text-7xl">{restaurant.emoji}</div>
-                  {restaurant.openNow && (
-                    <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-                      Open Now
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                      <MapPin className="w-4 h-4" />
+                      <span className="truncate">{restaurant.city}</span>
                     </div>
-                  )}
-                </div>
 
-                <div className="p-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    {restaurant.name}
-                  </h3>
-
-                  <div className="flex items-center gap-2 text-xs text-gray-600 mb-3">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      <span className="font-semibold">{restaurant.rating}</span>
-                    </div>
-                    <span>•</span>
-                    <span>{restaurant.cuisine}</span>
+                    <button
+                      className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all"
+                    >
+                      View Details
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => handleReserve(restaurant.name)}
-                    className="w-full py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all text-sm"
-                  >
-                    View Details
-                  </button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* No Results */}
+        {!loading && !error && restaurants.length === 0 && (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-2xl font-bold text-gray-700 mb-2">No restaurants found</h3>
+            <p className="text-gray-500">Try adjusting your filters or search query</p>
+          </div>
+        )}
       </main>
 
       <style>{`
@@ -389,6 +375,12 @@ export default function Dashboard() {
         .scrollbar-hide {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
     </div>
