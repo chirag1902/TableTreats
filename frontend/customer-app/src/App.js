@@ -8,6 +8,7 @@ import {
 import { useEffect, useState } from "react";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
+import RestaurantDetails from "./pages/RestaurantDetails";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 
@@ -86,6 +87,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/restaurant/:id"
+          element={
+            <ProtectedRoute>
+              <RestaurantDetails />
             </ProtectedRoute>
           }
         />
