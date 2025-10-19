@@ -70,10 +70,9 @@ async def search_restaurants(
 
 def _format_restaurant_summary(restaurant: Dict) -> Dict:
     """Format restaurant data for list view"""
-    # Use the existing restaurant image endpoint
     thumbnail_url = None
     if restaurant.get("thumbnail_id"):
-        thumbnail_url = f"/api/restaurant/image/{restaurant['thumbnail_id']}"
+        thumbnail_url = f"http://localhost:8000/restaurant/image/{restaurant['thumbnail_id']}"
     
     return {
         "id": str(restaurant["_id"]),
@@ -89,18 +88,17 @@ def _format_restaurant_summary(restaurant: Dict) -> Dict:
 
 def _format_restaurant_details(restaurant: Dict) -> Dict:
     """Format restaurant data for detail view"""
-    # Use the existing restaurant image endpoint
     thumbnail_url = None
     if restaurant.get("thumbnail_id"):
-        thumbnail_url = f"/api/restaurant/image/{restaurant['thumbnail_id']}"
+        thumbnail_url = f"http://localhost:8000/restaurant/image/{restaurant['thumbnail_id']}"
     
     ambiance_urls = []
     for photo_id in restaurant.get("ambiance_photo_ids", []):
-        ambiance_urls.append(f"/api/restaurant/image/{photo_id}")
+        ambiance_urls.append(f"http://localhost:8000/restaurant/image/{photo_id}")
     
     menu_urls = []
     for photo_id in restaurant.get("menu_photo_ids", []):
-        menu_urls.append(f"/api/restaurant/image/{photo_id}")
+        menu_urls.append(f"http://localhost:8000/restaurant/image/{photo_id}")
     
     return {
         "id": str(restaurant["_id"]),

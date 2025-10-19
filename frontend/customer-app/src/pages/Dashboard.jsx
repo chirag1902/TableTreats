@@ -302,15 +302,17 @@ export default function Dashboard() {
                   <div
                     className={`h-48 bg-gradient-to-br ${getCategoryGradient(restaurant.cuisine)} relative flex items-center justify-center`}
                   >
+                    
                     {restaurant.thumbnail ? (
-                      <img
-                        src={`http://localhost:8000${restaurant.thumbnail}`}
-                        alt={restaurant.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-8xl">{getCategoryEmoji(restaurant.cuisine)}</div>
-                    )}
+  <img
+    src={restaurant.thumbnail}  // Already has full URL from backend
+    alt={restaurant.name}
+    className="w-full h-full object-cover"
+  />
+) : (
+  <div className="text-8xl">{getCategoryEmoji(restaurant.cuisine)}</div>
+)}
+                    
                   </div>
 
                   <div className="p-5">

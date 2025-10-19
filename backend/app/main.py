@@ -15,4 +15,4 @@ app.add_middleware(
 
 # Routers
 app.include_router(auth_customer.router, prefix="/auth", tags=["Auth"])
-app.include_router(customer_restaurant_router.router, prefix="/api", tags=["Customer-Restaurants"])
+app.include_router(customer_restaurant_router.router, tags=["Customer-Restaurants"])
