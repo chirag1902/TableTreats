@@ -98,6 +98,7 @@ export default function SignUp() {
     fontSize: 15,
     background: "rgba(255,255,255,0.85)",
     outline: "none",
+    color: "#333",
   };
 
   const button = {

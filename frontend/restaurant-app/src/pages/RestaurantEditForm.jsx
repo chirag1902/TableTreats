@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { completeOnboarding } from '../api/restaurant';
+import React, { useState, useEffect } from 'react';
+import { getRestaurantProfile, updateRestaurantProfile } from '../api/restaurant';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, ArrowLeft, Check, Upload, X, 
@@ -7,26 +7,25 @@ import {
   Wine, Wifi, Car, UtensilsCrossed, Home
 } from 'lucide-react';
 
-export default function RestaurantOnboarding() {
+export default function RestaurantEditForm() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    // Step 1: Basic Info
     restaurantName: '',
     address: '',
     city: '',
     zipcode: '',
     phone: '',
     description: '',
-    
-    // Step 2: Images
     thumbnail: null,
+    thumbnailPreview: null,
     ambiancePhotos: [],
+    ambiancePhotosPreview: [],
     menuPhotos: [],
-    
-    // Step 3: Operating Hours
+    menuPhotosPreview: [],
     hours: {
       monday: { open: '09:00', close: '22:00', closed: false },
       tuesday: { open: '09:00', close: '22:00', closed: false },
@@ -36,8 +35,6 @@ export default function RestaurantOnboarding() {
       saturday: { open: '09:00', close: '23:00', closed: false },
       sunday: { open: '10:00', close: '21:00', closed: false }
     },
-    
-    // Step 4: Cuisine & Features
     cuisine: [],
     features: []
   });
@@ -74,6 +71,46 @@ export default function RestaurantOnboarding() {
     { name: 'Reservations Required', icon: Clock }
   ];
 
+  useEffect(() => {
+    const fetchRestaurantData = async () => {
+      const token = localStorage.getItem('restaurant_token');
+      if (!token) {
+        navigate('/signin');
+        return;
+      }
+
+      try {
+        const data = await getRestaurantProfile();
+        
+        setFormData({
+          restaurantName: data.name || '',
+          address: data.address || '',
+          city: data.city || '',
+          zipcode: data.zipcode || '',
+          phone: data.phone || '',
+          description: data.description || '',
+          thumbnail: null,
+          thumbnailPreview: data.thumbnail || null,
+          ambiancePhotos: [],
+          ambiancePhotosPreview: data.ambiancePhotos || [],
+          menuPhotos: [],
+          menuPhotosPreview: data.menuPhotos || [],
+          hours: data.hours || formData.hours,
+          cuisine: data.cuisine || [],
+          features: data.features || []
+        });
+        
+      } catch (error) {
+        console.error('Failed to fetch restaurant data:', error);
+        setError('Failed to load restaurant data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurantData();
+  }, [navigate]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -82,23 +119,41 @@ export default function RestaurantOnboarding() {
   const handleFileUpload = (e, type) => {
     const files = Array.from(e.target.files);
     if (type === 'thumbnail') {
-      setFormData({ ...formData, thumbnail: files[0] });
+      setFormData({ 
+        ...formData, 
+        thumbnail: files[0],
+        thumbnailPreview: URL.createObjectURL(files[0])
+      });
     } else if (type === 'ambiance') {
-      setFormData({ ...formData, ambiancePhotos: [...formData.ambiancePhotos, ...files] });
+      const newPhotos = [...formData.ambiancePhotos, ...files];
+      const newPreviews = [...formData.ambiancePhotosPreview, ...files.map(f => URL.createObjectURL(f))];
+      setFormData({ 
+        ...formData, 
+        ambiancePhotos: newPhotos,
+        ambiancePhotosPreview: newPreviews
+      });
     } else if (type === 'menu') {
-      setFormData({ ...formData, menuPhotos: [...formData.menuPhotos, ...files] });
+      const newPhotos = [...formData.menuPhotos, ...files];
+      const newPreviews = [...formData.menuPhotosPreview, ...files.map(f => URL.createObjectURL(f))];
+      setFormData({ 
+        ...formData, 
+        menuPhotos: newPhotos,
+        menuPhotosPreview: newPreviews
+      });
     }
   };
 
   const removePhoto = (type, index) => {
     if (type === 'thumbnail') {
-      setFormData({ ...formData, thumbnail: null });
+      setFormData({ ...formData, thumbnail: null, thumbnailPreview: null });
     } else if (type === 'ambiance') {
       const newPhotos = formData.ambiancePhotos.filter((_, i) => i !== index);
-      setFormData({ ...formData, ambiancePhotos: newPhotos });
+      const newPreviews = formData.ambiancePhotosPreview.filter((_, i) => i !== index);
+      setFormData({ ...formData, ambiancePhotos: newPhotos, ambiancePhotosPreview: newPreviews });
     } else if (type === 'menu') {
       const newPhotos = formData.menuPhotos.filter((_, i) => i !== index);
-      setFormData({ ...formData, menuPhotos: newPhotos });
+      const newPreviews = formData.menuPhotosPreview.filter((_, i) => i !== index);
+      setFormData({ ...formData, menuPhotos: newPhotos, menuPhotosPreview: newPreviews });
     }
   };
 
@@ -137,73 +192,46 @@ export default function RestaurantOnboarding() {
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
+    setSubmitting(true);
     setError('');
     
     try {
-      const response = await completeOnboarding(formData);
-      console.log('Profile created:', response);
-      
-      // Show success message
-      //alert('Restaurant profile created successfully! 🎉');
-      
-      // Redirect to dashboard
+      await updateRestaurantProfile(formData);
       navigate('/dashboard');
-      
     } catch (err) {
-      console.error('Onboarding error:', err);
-      setError(err.response?.data?.detail || 'Failed to complete profile. Please try again.');
+      console.error('Update error:', err);
+      setError(err.response?.data?.detail || 'Failed to update profile. Please try again.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-//   // Add error display in your form
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 py-8 px-4">
-//       {/* ... header ... */}
-      
-//       <div className="bg-white rounded-3xl shadow-2xl p-8">
-//         {/* Show error if any */}
-//         {error && (
-//           <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700">
-//             {error}
-//           </div>
-//         )}
-        
-//         {/* ... rest of form ... */}
-        
-//         {/* Update submit button */}
-//         <button
-//           onClick={handleSubmit}
-//           disabled={loading}
-//           className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-//         >
-//           <Check className="w-5 h-5" />
-//           {loading ? 'Saving...' : 'Complete Setup'}
-//         </button>
-//       </div>
-//     </div>
-//   );
-// }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading restaurant data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center">
               <span className="text-2xl">🍽️</span>
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-              TableTreats Partner
+              Edit Restaurant Profile
             </h1>
           </div>
-          <p className="text-gray-600">Complete your restaurant profile</p>
+          <p className="text-gray-600">Update your restaurant information</p>
         </div>
 
-        {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
             {[1, 2, 3, 4].map((step) => (
@@ -231,9 +259,14 @@ export default function RestaurantOnboarding() {
           </div>
         </div>
 
-        {/* Form Card */}
         <div className="bg-white rounded-3xl shadow-2xl p-8">
-          {/* Step 1: Basic Information */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl text-red-700 flex items-center gap-2">
+              <X className="w-5 h-5" />
+              {error}
+            </div>
+          )}
+
           {currentStep === 1 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Basic Information</h2>
@@ -318,16 +351,14 @@ export default function RestaurantOnboarding() {
             </div>
           )}
 
-          {/* Step 2: Photos */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Restaurant Photos</h2>
 
-              {/* Thumbnail */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Photo *</label>
                 <p className="text-sm text-gray-500 mb-3">This will be the main photo customers see</p>
-                {!formData.thumbnail ? (
+                {!formData.thumbnailPreview ? (
                   <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-pink-500 transition-colors bg-gradient-to-br from-gray-50 to-purple-50">
                     <Upload className="w-12 h-12 text-gray-400 mb-2" />
                     <span className="text-gray-600 font-medium">Click to upload cover photo</span>
@@ -337,7 +368,7 @@ export default function RestaurantOnboarding() {
                 ) : (
                   <div className="relative">
                     <img 
-                      src={URL.createObjectURL(formData.thumbnail)} 
+                      src={formData.thumbnailPreview} 
                       alt="Thumbnail" 
                       className="w-full h-64 object-cover rounded-xl"
                     />
@@ -351,15 +382,14 @@ export default function RestaurantOnboarding() {
                 )}
               </div>
 
-              {/* Ambiance Photos */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Ambiance Photos</label>
                 <p className="text-sm text-gray-500 mb-3">Show the atmosphere of your restaurant (up to 6 photos)</p>
                 <div className="grid grid-cols-3 gap-4 mb-4">
-                  {formData.ambiancePhotos.map((photo, index) => (
+                  {formData.ambiancePhotosPreview.map((photo, index) => (
                     <div key={index} className="relative">
                       <img 
-                        src={URL.createObjectURL(photo)} 
+                        src={photo} 
                         alt={`Ambiance ${index + 1}`} 
                         className="w-full h-32 object-cover rounded-xl"
                       />
@@ -372,7 +402,7 @@ export default function RestaurantOnboarding() {
                     </div>
                   ))}
                 </div>
-                {formData.ambiancePhotos.length < 6 && (
+                {formData.ambiancePhotosPreview.length < 6 && (
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-pink-500 transition-colors">
                     <Upload className="w-8 h-8 text-gray-400 mb-1" />
                     <span className="text-sm text-gray-600">Add ambiance photos</span>
@@ -381,15 +411,14 @@ export default function RestaurantOnboarding() {
                 )}
               </div>
 
-              {/* Menu Photos */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Menu Photos</label>
                 <p className="text-sm text-gray-500 mb-3">Upload photos of your menu (up to 4 photos)</p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  {formData.menuPhotos.map((photo, index) => (
+                  {formData.menuPhotosPreview.map((photo, index) => (
                     <div key={index} className="relative">
                       <img 
-                        src={URL.createObjectURL(photo)} 
+                        src={photo} 
                         alt={`Menu ${index + 1}`} 
                         className="w-full h-40 object-cover rounded-xl"
                       />
@@ -402,7 +431,7 @@ export default function RestaurantOnboarding() {
                     </div>
                   ))}
                 </div>
-                {formData.menuPhotos.length < 4 && (
+                {formData.menuPhotosPreview.length < 4 && (
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-pink-500 transition-colors">
                     <Upload className="w-8 h-8 text-gray-400 mb-1" />
                     <span className="text-sm text-gray-600">Add menu photos</span>
@@ -413,7 +442,6 @@ export default function RestaurantOnboarding() {
             </div>
           )}
 
-          {/* Step 3: Operating Hours */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Operating Hours</h2>
@@ -464,7 +492,6 @@ export default function RestaurantOnboarding() {
             </div>
           )}
 
-          {/* Step 4: Cuisine & Features */}
           {currentStep === 4 && (
             <div className="space-y-8">
               <div>
@@ -517,40 +544,50 @@ export default function RestaurantOnboarding() {
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex justify-between mt-8 pt-6 border-t">
             <button
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
-                currentStep === 1
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-all"
             >
-              <ArrowLeft className="w-5 h-5" />
-              Previous
+              Cancel
             </button>
 
-            {currentStep < totalSteps ? (
+            <div className="flex gap-3">
               <button
-                onClick={nextStep}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                  currentStep === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
               >
-                Next
-                <ArrowRight className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
+                Previous
               </button>
-            ) : (
-              <button
-                onClick={handleSubmit}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all"
-              >
-                <Check className="w-5 h-5" />
-                Complete Setup
-              </button>
-            )}
+
+              {currentStep < totalSteps ? (
+                <button
+                  onClick={nextStep}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all"
+                >
+                  Next
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Check className="w-5 h-5" />
+                  {submitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  )};
+  );
+}

@@ -7,7 +7,6 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Existing functions...
 export async function restaurantSignup(payload) {
   const { data } = await api.post('/restaurant/signup', payload);
   return data;
@@ -26,37 +25,32 @@ export async function restaurantLogin(credentials) {
   return data;
 }
 
-// ✅ NEW: Complete onboarding
+
 export async function completeOnboarding(formData) {
   const token = localStorage.getItem('restaurant_token');
   
-  // Create FormData for file uploads
   const payload = new FormData();
   
-  // Add text fields
   payload.append('restaurant_name', formData.restaurantName);
   payload.append('address', formData.address);
   payload.append('city', formData.city);
   payload.append('zipcode', formData.zipcode);
   payload.append('phone', formData.phone);
-  payload.append('description', formData.description);
+  payload.append('description', formData.description || '');
   
-  // Add cuisines and features as JSON
-  payload.append('cuisines', JSON.stringify(formData.cuisines));
+  // Fix: Use 'cuisine' instead of 'cuisines'
+  payload.append('cuisine', JSON.stringify(formData.cuisine));
   payload.append('features', JSON.stringify(formData.features));
   payload.append('hours', JSON.stringify(formData.hours));
   
-  // Add thumbnail
   if (formData.thumbnail) {
     payload.append('thumbnail', formData.thumbnail);
   }
   
-  // Add ambiance photos
   formData.ambiancePhotos.forEach((photo, index) => {
     payload.append(`ambiance_photo_${index}`, photo);
   });
   
-  // Add menu photos
   formData.menuPhotos.forEach((photo, index) => {
     payload.append(`menu_photo_${index}`, photo);
   });
@@ -75,7 +69,6 @@ export async function completeOnboarding(formData) {
   return data;
 }
 
-// ✅ NEW: Get restaurant profile
 export async function getRestaurantProfile() {
   const token = localStorage.getItem('restaurant_token');
   
@@ -84,6 +77,50 @@ export async function getRestaurantProfile() {
       'Authorization': `Bearer ${token}`
     }
   });
+  
+  return data;
+}
+
+export async function updateRestaurantProfile(formData) {
+  const token = localStorage.getItem('restaurant_token');
+  
+  const payload = new FormData();
+  
+  payload.append('restaurant_name', formData.restaurantName);
+  payload.append('address', formData.address);
+  payload.append('city', formData.city);
+  payload.append('zipcode', formData.zipcode);
+  payload.append('phone', formData.phone);
+  payload.append('description', formData.description || '');
+  
+  payload.append('cuisine', JSON.stringify(formData.cuisine));
+  payload.append('features', JSON.stringify(formData.features));
+  payload.append('hours', JSON.stringify(formData.hours));
+  
+  // Only send new thumbnail if uploaded
+  if (formData.thumbnail) {
+    payload.append('thumbnail', formData.thumbnail);
+  }
+  
+  // Only send new photos if uploaded
+  formData.ambiancePhotos.forEach((photo, index) => {
+    payload.append(`ambiance_photo_${index}`, photo);
+  });
+  
+  formData.menuPhotos.forEach((photo, index) => {
+    payload.append(`menu_photo_${index}`, photo);
+  });
+  
+  const { data } = await axios.put(
+    `${API_URL}/restaurant/profile`,
+    payload,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
   
   return data;
 }

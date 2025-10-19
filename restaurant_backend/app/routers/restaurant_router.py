@@ -94,7 +94,7 @@ async def complete_profile(
     zipcode: str = Form(...),
     phone: str = Form(...),
     description: str = Form(""),
-    cuisines: str = Form(...),
+    cuisine: str = Form(...),
     features: str = Form(...),
     hours: str = Form(...),
     thumbnail: Optional[UploadFile] = File(None),
@@ -121,11 +121,11 @@ async def complete_profile(
     
     # Parse JSON fields
     try:
-        cuisines_list = json.loads(cuisines)
+        cuisines_list = json.loads(cuisine)
         features_list = json.loads(features)
         hours_dict = json.loads(hours)
     except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON format in cuisines, features, or hours")
+        raise HTTPException(status_code=400, detail="Invalid JSON format in cuisine, features, or hours")
     
     # Upload thumbnail to GridFS
     thumbnail_id = None
@@ -218,15 +218,15 @@ async def get_restaurant_profile(current_user: dict = Depends(get_current_restau
     # Build URLs for images stored in GridFS
     thumbnail_url = None
     if restaurant.get("thumbnail_id"):
-        thumbnail_url = f"/api/restaurant/image/{restaurant['thumbnail_id']}"
+        thumbnail_url = f"http://localhost:8001/api/restaurant/image/{restaurant['thumbnail_id']}"
     
     ambiance_urls = []
     for photo_id in restaurant.get("ambiance_photo_ids", []):
-        ambiance_urls.append(f"/api/restaurant/image/{photo_id}")
+        ambiance_urls.append(f"http://localhost:8001/api/restaurant/image/{photo_id}")
     
     menu_urls = []
     for photo_id in restaurant.get("menu_photo_ids", []):
-        menu_urls.append(f"/api/restaurant/image/{photo_id}")
+        menu_urls.append(f"http://localhost:8001/api/restaurant/image/{photo_id}")
     
     # Return full profile
     return {
@@ -246,7 +246,7 @@ async def get_restaurant_profile(current_user: dict = Depends(get_current_restau
         "features": restaurant.get("features", []),
         "hours": restaurant.get("hours", {}),
         "rating": 4.8,  # Mock data - replace with actual ratings later
-        "totalReviews": 324  # Mock data - replace with actual reviews count later
+        "totalReviews": 324  # Mock data - replace with actual reviews later
     }
 
 
@@ -332,16 +332,29 @@ async def update_restaurant_profile(
     zipcode: Optional[str] = Form(None),
     phone: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
-    cuisines: Optional[str] = Form(None),
+    cuisine: Optional[str] = Form(None),
     features: Optional[str] = Form(None),
     hours: Optional[str] = Form(None),
+    thumbnail: Optional[UploadFile] = File(None),
+    ambiance_photo_0: Optional[UploadFile] = File(None),
+    ambiance_photo_1: Optional[UploadFile] = File(None),
+    ambiance_photo_2: Optional[UploadFile] = File(None),
+    ambiance_photo_3: Optional[UploadFile] = File(None),
+    ambiance_photo_4: Optional[UploadFile] = File(None),
+    ambiance_photo_5: Optional[UploadFile] = File(None),
+    menu_photo_0: Optional[UploadFile] = File(None),
+    menu_photo_1: Optional[UploadFile] = File(None),
+    menu_photo_2: Optional[UploadFile] = File(None),
+    menu_photo_3: Optional[UploadFile] = File(None),
     current_user: dict = Depends(get_current_restaurant)
 ):
-    """Update restaurant profile (Protected route)"""
+    """Update restaurant profile with optional new photos (Protected route)"""
     
     restaurant = await db.restaurants.find_one({"email": current_user["email"]})
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    restaurant_id = str(restaurant["_id"])
     
     # Build update dictionary with only provided fields
     update_data = {"updated_at": datetime.utcnow()}
@@ -356,14 +369,73 @@ async def update_restaurant_profile(
         update_data["zipcode"] = zipcode
     if phone:
         update_data["phone"] = phone
-    if description:
+    if description is not None:  # Allow empty string
         update_data["description"] = description
-    if cuisines:
-        update_data["cuisines"] = json.loads(cuisines)
+    
+    # Parse JSON fields if provided
+    if cuisine:
+        try:
+            update_data["cuisines"] = json.loads(cuisine)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON format in cuisine")
+    
     if features:
-        update_data["features"] = json.loads(features)
+        try:
+            update_data["features"] = json.loads(features)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON format in features")
+    
     if hours:
-        update_data["hours"] = json.loads(hours)
+        try:
+            update_data["hours"] = json.loads(hours)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON format in hours")
+    
+    # Upload new thumbnail if provided (delete old one first)
+    if thumbnail:
+        # Delete old thumbnail from GridFS
+        old_thumbnail_id = restaurant.get("thumbnail_id")
+        if old_thumbnail_id:
+            await delete_image_from_gridfs(old_thumbnail_id)
+        
+        # Upload new thumbnail
+        thumbnail_id = await upload_image_to_gridfs(
+            thumbnail, 
+            metadata={"restaurant_id": restaurant_id, "type": "thumbnail"}
+        )
+        update_data["thumbnail_id"] = thumbnail_id
+    
+    # Upload new ambiance photos if provided (append to existing)
+    new_ambiance_ids = []
+    for i in range(6):
+        photo = locals().get(f'ambiance_photo_{i}')
+        if photo:
+            photo_id = await upload_image_to_gridfs(
+                photo,
+                metadata={"restaurant_id": restaurant_id, "type": "ambiance"}
+            )
+            new_ambiance_ids.append(photo_id)
+    
+    if new_ambiance_ids:
+        # Get existing IDs and append new ones
+        existing_ambiance = restaurant.get("ambiance_photo_ids", [])
+        update_data["ambiance_photo_ids"] = existing_ambiance + new_ambiance_ids
+    
+    # Upload new menu photos if provided (append to existing)
+    new_menu_ids = []
+    for i in range(4):
+        photo = locals().get(f'menu_photo_{i}')
+        if photo:
+            photo_id = await upload_image_to_gridfs(
+                photo,
+                metadata={"restaurant_id": restaurant_id, "type": "menu"}
+            )
+            new_menu_ids.append(photo_id)
+    
+    if new_menu_ids:
+        # Get existing IDs and append new ones
+        existing_menu = restaurant.get("menu_photo_ids", [])
+        update_data["menu_photo_ids"] = existing_menu + new_menu_ids
     
     # Update restaurant
     await db.restaurants.update_one(
@@ -371,4 +443,7 @@ async def update_restaurant_profile(
         {"$set": update_data}
     )
     
-    return {"message": "Profile updated successfully"}
+    return {
+        "message": "Profile updated successfully",
+        "restaurant_id": restaurant_id
+    }

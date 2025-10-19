@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { getRestaurantProfile } from '../api/restaurant';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Search, MapPin, User, LogOut, Star, Calendar, 
+  MapPin, User, LogOut, Star, Calendar, 
   DollarSign, Users, TrendingUp, Edit, Clock,
-  CheckCircle, XCircle, Package, ImagePlus
+  CheckCircle, XCircle, Package, ImagePlus, Image, Phone
 } from 'lucide-react';
 
 export default function RestaurantDashboard() {
   const navigate = useNavigate();
   const [restaurantData, setRestaurantData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showImageGallery, setShowImageGallery] = useState(false);
+  const [galleryType, setGalleryType] = useState('');
 
   useEffect(() => {
     const fetchRestaurantData = async () => {
@@ -21,12 +23,9 @@ export default function RestaurantDashboard() {
       }
 
       try {
-        // ✅ Fetch real data from backend
         const data = await getRestaurantProfile();
-        
         setRestaurantData(data);
         
-        // ✅ Check if onboarding is complete
         if (!data.isOnboarded) {
           navigate('/onboarding');
         }
@@ -34,6 +33,22 @@ export default function RestaurantDashboard() {
       } catch (error) {
         console.error('Failed to fetch restaurant data:', error);
         
+        setRestaurantData({
+          name: "Your Restaurant",
+          email: localStorage.getItem('restaurant_email') || "restaurant@example.com",
+          thumbnail: null,
+          address: "123 Main Street",
+          city: "New Brunswick",
+          zipcode: "08901",
+          phone: "(732) 555-0123",
+          cuisine: ["American"],
+          features: ["Outdoor Seating", "WiFi"],
+          ambiancePhotos: [],
+          menuPhotos: [],
+          rating: 4.8,
+          totalReviews: 0,
+          isOnboarded: false
+        });
         
       } finally {
         setLoading(false);
@@ -42,12 +57,20 @@ export default function RestaurantDashboard() {
 
     fetchRestaurantData();
   }, [navigate]);
- 
 
   const handleLogout = () => {
     localStorage.removeItem('restaurant_token');
     localStorage.removeItem('restaurant_email');
-    alert('Logged out successfully');
+    navigate('/signin');
+  };
+
+  const handleEditProfile = () => {
+    navigate('/edit-profile');
+  };
+
+  const openGallery = (type) => {
+    setGalleryType(type);
+    setShowImageGallery(true);
   };
 
   const stats = [
@@ -77,7 +100,7 @@ export default function RestaurantDashboard() {
     },
     {
       title: "Average Rating",
-      value: "4.8",
+      value: restaurantData?.rating?.toString() || "4.8",
       change: "+0.2",
       icon: Star,
       gradient: "from-yellow-500 to-orange-500",
@@ -91,28 +114,28 @@ export default function RestaurantDashboard() {
       description: "Update restaurant info, photos, hours",
       icon: Edit,
       gradient: "from-pink-500 to-purple-600",
-      action: () => alert('Profile Edit page coming soon!')
+      action: handleEditProfile
     },
     {
       title: "Manage Reservations",
       description: "View and manage table bookings",
       icon: Calendar,
       gradient: "from-blue-500 to-cyan-500",
-      action: () => alert('Reservations page coming soon!')
+      action: () => navigate('/reservations')
     },
     {
       title: "Menu Management",
       description: "Update menu items and prices",
       icon: Package,
       gradient: "from-green-500 to-teal-500",
-      action: () => alert('Menu Management page coming soon!')
+      action: () => navigate('/menu')
     },
     {
       title: "Create Deal",
       description: "Launch flash deals & happy hours",
       icon: TrendingUp,
       gradient: "from-orange-500 to-red-500",
-      action: () => alert('Deals page coming soon!')
+      action: () => navigate('/deals')
     }
   ];
 
@@ -134,7 +157,7 @@ export default function RestaurantDashboard() {
     );
   }
 
-  if (!restaurantData.isOnboarded) {
+  if (!restaurantData?.isOnboarded) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center p-4">
         <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 md:p-12 text-center">
@@ -173,7 +196,7 @@ export default function RestaurantDashboard() {
           </div>
 
           <button
-            onClick={() => alert('Onboarding form coming next!')}
+            onClick={() => navigate('/onboarding')}
             className="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:scale-105 transition-all"
           >
             Complete Restaurant Profile →
@@ -216,7 +239,7 @@ export default function RestaurantDashboard() {
               <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full hover:shadow-lg transition-all">
                 <User className="w-4 h-4 text-purple-600" />
                 <span className="text-sm font-medium hidden sm:inline">
-                  {restaurantData.email.split('@')[0]}
+                  {restaurantData.email?.split('@')[0]}
                 </span>
               </button>
 
@@ -254,34 +277,71 @@ export default function RestaurantDashboard() {
                 <div className="flex items-center gap-3 mb-2">
                   <h2 className="text-3xl font-bold text-gray-900">{restaurantData.name}</h2>
                   <button
-                    onClick={() => alert('Edit Profile coming soon!')}
+                    onClick={handleEditProfile}
                     className="p-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2 text-gray-600 mb-4">
+                <div className="flex items-center gap-2 text-gray-600 mb-2">
                   <MapPin className="w-4 h-4" />
-                  <span>{restaurantData.address}, {restaurantData.city}, {restaurantData.zipcode}</span>
+                  <span>
+                    {restaurantData.address && `${restaurantData.address}, `}
+                    {restaurantData.city && `${restaurantData.city}, `}
+                    {restaurantData.zipcode || 'NJ'}
+                  </span>
                 </div>
 
+                {restaurantData.phone && (
+                  <div className="flex items-center gap-2 text-gray-600 mb-4">
+                    <Phone className="w-4 h-4" />
+                    <span>{restaurantData.phone}</span>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {restaurantData.cuisine.map((c, i) => (
+                  {restaurantData.cuisine?.map((c, i) => (
                     <span key={i} className="px-3 py-1 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-700 rounded-full text-sm font-medium">
                       {c}
                     </span>
                   ))}
                 </div>
 
-                <div className="flex flex-wrap gap-3 text-sm">
-                  {restaurantData.features.map((f, i) => (
+                <div className="flex flex-wrap gap-3 text-sm mb-4">
+                  {restaurantData.features?.slice(0, 6).map((f, i) => (
                     <span key={i} className="flex items-center gap-1 text-gray-600">
                       <CheckCircle className="w-4 h-4 text-green-500" />
                       {f}
                     </span>
                   ))}
+                  {restaurantData.features?.length > 6 && (
+                    <span className="text-purple-600 font-medium">+{restaurantData.features.length - 6} more</span>
+                  )}
                 </div>
+
+                {(restaurantData.ambiancePhotos?.length > 0 || restaurantData.menuPhotos?.length > 0) && (
+                  <div className="flex gap-3">
+                    {restaurantData.ambiancePhotos?.length > 0 && (
+                      <button
+                        onClick={() => openGallery('ambiance')}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-lg hover:shadow-md transition-all"
+                      >
+                        <Image className="w-4 h-4" />
+                        <span className="text-sm font-semibold">Ambiance ({restaurantData.ambiancePhotos.length})</span>
+                      </button>
+                    )}
+                    {restaurantData.menuPhotos?.length > 0 && (
+                      <button
+                        onClick={() => openGallery('menu')}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-100 to-teal-100 text-green-700 rounded-lg hover:shadow-md transition-all"
+                      >
+                        <Image className="w-4 h-4" />
+                        <span className="text-sm font-semibold">Menu ({restaurantData.menuPhotos.length})</span>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="text-center bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4">
@@ -333,7 +393,7 @@ export default function RestaurantDashboard() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Today's Reservations</h2>
             <button
-              onClick={() => alert('View all reservations coming soon!')}
+              onClick={() => navigate('/reservations')}
               className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-semibold"
             >
               View All
@@ -382,6 +442,26 @@ export default function RestaurantDashboard() {
           </div>
         </div>
       </main>
+
+      {showImageGallery && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4" onClick={() => setShowImageGallery(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">
+                {galleryType === 'ambiance' ? 'Ambiance Photos' : 'Menu Photos'}
+              </h3>
+              <button onClick={() => setShowImageGallery(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <XCircle className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {(galleryType === 'ambiance' ? restaurantData.ambiancePhotos : restaurantData.menuPhotos)?.map((photo, index) => (
+                <img key={index} src={photo} alt={`${galleryType} ${index + 1}`} className="w-full h-48 object-cover rounded-xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
