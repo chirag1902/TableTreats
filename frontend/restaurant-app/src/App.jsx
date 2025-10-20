@@ -1,15 +1,16 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import RestaurantDashboard from './pages/Dashboard';
-import RestaurantOnboarding from './pages/OnboardingForm';
-import RestaurantEditForm from './pages/RestaurantEditForm';
-import SignIn from './pages/SignIn';
-import SignUp from './pages/Signup';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import RestaurantDashboard from "./pages/Dashboard";
+import RestaurantOnboarding from "./pages/OnboardingForm";
+import RestaurantEditForm from "./pages/RestaurantEditForm";
+import SignIn from "./pages/SignIn";
+import Landing from "./pages/Landing";
+import SignUp from "./pages/Signup";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<SignIn />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/dashboard" element={<RestaurantDashboard />} />
