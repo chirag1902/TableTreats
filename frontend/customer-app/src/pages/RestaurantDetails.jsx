@@ -13,6 +13,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { getRestaurantById } from "../services/restaurantService";
+import logoImage from "../assets/logo.png";
 
 export default function RestaurantDetails() {
   const { id } = useParams();
@@ -106,9 +107,11 @@ export default function RestaurantDetails() {
             </button>
 
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                T
-              </div>
+              <img 
+                src={logoImage} 
+                alt="TableTreats Logo" 
+                className="w-10 h-10 object-contain"
+              />
               <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
                 TableTreats
               </span>

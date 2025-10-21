@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ← MAKE SURE THIS LINE IS HERE
+import { useNavigate } from "react-router-dom";
+import logoImage from "../assets/logo.png";
 
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [scrollY, setScrollY] = useState(0);
-  const navigate = useNavigate(); // ← MAKE SURE THIS LINE IS HERE
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -17,8 +18,9 @@ export default function LandingPage() {
   };
 
   const handleNavigate = (path) => {
-    navigate(path); // ← This uses the navigate hook
+    navigate(path);
   };
+
   const features = [
     {
       icon: "🔍",
@@ -127,91 +129,16 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <div className="w-12 h-12 relative">
-                <svg viewBox="0 0 100 100" className="w-full h-full">
-                  <defs>
-                    <linearGradient
-                      id="logoGrad1"
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="100%"
-                    >
-                      <stop
-                        offset="0%"
-                        style={{ stopColor: "#ff6b6b", stopOpacity: 1 }}
-                      />
-                      <stop
-                        offset="100%"
-                        style={{ stopColor: "#ee5a6f", stopOpacity: 1 }}
-                      />
-                    </linearGradient>
-                    <linearGradient
-                      id="logoGrad2"
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="100%"
-                    >
-                      <stop
-                        offset="0%"
-                        style={{ stopColor: "#a855f7", stopOpacity: 1 }}
-                      />
-                      <stop
-                        offset="100%"
-                        style={{ stopColor: "#7c3aed", stopOpacity: 1 }}
-                      />
-                    </linearGradient>
-                  </defs>
-
-                  {/* Letter T shape with modern twist */}
-                  <rect
-                    x="20"
-                    y="15"
-                    width="60"
-                    height="12"
-                    rx="6"
-                    fill="url(#logoGrad1)"
-                  />
-                  <rect
-                    x="44"
-                    y="15"
-                    width="12"
-                    height="70"
-                    rx="6"
-                    fill="url(#logoGrad2)"
-                  />
-
-                  {/* Plate at bottom of T */}
-                  <ellipse
-                    cx="50"
-                    cy="78"
-                    rx="22"
-                    ry="8"
-                    fill="url(#logoGrad1)"
-                    opacity="0.3"
-                  />
-                  <ellipse
-                    cx="50"
-                    cy="75"
-                    rx="20"
-                    ry="6"
-                    fill="url(#logoGrad1)"
-                  />
-
-                  {/* Small food/dining elements on the plate */}
-                  <circle cx="42" cy="73" r="2.5" fill="white" opacity="0.9" />
-                  <circle cx="50" cy="72" r="3" fill="white" opacity="0.9" />
-                  <circle cx="58" cy="73" r="2.5" fill="white" opacity="0.9" />
-
-                  {/* Sparkle/star effects for "treats" */}
-                  <path d="M 15 35 L 17 40 L 12 40 Z" fill="#fbbf24" />
-                  <path d="M 85 45 L 87 50 L 82 50 Z" fill="#fbbf24" />
-                  <circle cx="25" cy="65" r="1.5" fill="#fbbf24" />
-                  <circle cx="75" cy="30" r="1.5" fill="#fbbf24" />
-                </svg>
+              <img 
+                src={logoImage} 
+                alt="Tabletreats Logo" 
+                className="w-12 h-12 object-contain"
+              />
+              <div className={`text-2xl font-bold transition-colors ${
+                scrollY > 50 ? "text-gray-900" : "text-white"
+              }`}>
+                Tabletreats
               </div>
-              <div className="text-2xl font-bold text-white">Tabletreats</div>
             </div>
             <ul className="hidden md:flex gap-8 items-center">
               <li>
@@ -563,9 +490,11 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                  T
-                </div>
+                <img 
+                  src={logoImage} 
+                  alt="Tabletreats Logo" 
+                  className="w-10 h-10 object-contain"
+                />
                 <div className="text-2xl font-bold">Tabletreats</div>
               </div>
               <p className="text-gray-400 mb-6">

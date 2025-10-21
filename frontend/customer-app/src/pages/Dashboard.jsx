@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, MapPin, User, LogOut, Star } from "lucide-react";
 import { logout } from "../services/authService";
 import { getAllRestaurants, searchRestaurants } from "../services/restaurantService";
+import logoImage from "../assets/logo.png";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -163,9 +164,11 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                T
-              </div>
+              <img 
+                src={logoImage} 
+                alt="TableTreats Logo" 
+                className="w-10 h-10 object-contain"
+              />
               <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
                 TableTreats
               </span>
@@ -302,17 +305,15 @@ export default function Dashboard() {
                   <div
                     className={`h-48 bg-gradient-to-br ${getCategoryGradient(restaurant.cuisine)} relative flex items-center justify-center`}
                   >
-                    
                     {restaurant.thumbnail ? (
-  <img
-    src={restaurant.thumbnail}  // Already has full URL from backend
-    alt={restaurant.name}
-    className="w-full h-full object-cover"
-  />
-) : (
-  <div className="text-8xl">{getCategoryEmoji(restaurant.cuisine)}</div>
-)}
-                    
+                      <img
+                        src={restaurant.thumbnail}
+                        alt={restaurant.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-8xl">{getCategoryEmoji(restaurant.cuisine)}</div>
+                    )}
                   </div>
 
                   <div className="p-5">
