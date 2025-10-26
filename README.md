@@ -114,14 +114,24 @@ cd TableTreats
 - Windows: venv\Scripts\activate</br>
 - pip install -r requirements.txt</br>
 - cp .env.example .env  # then edit with your MongoDB Atlas URI and JWT secret</br>
-- uvicorn main:app --reload</br>
+- uvicorn main:app --reload -port8000
+- For Customer: http://127.0.0.1:8000
+- For Restaurant : http://127.0.0.1:8001
 
 **3. Frontend Setup**
 - cd ../frontend</br>
 - npm install</br>
 - npm run dev</br>
+- For Customer: http://localhost:5173
+- For Restaurant: http://localhost:5173
 
 **4. Environment Variables**
   - MONGO_URI=<your_mongodb_atlas_connection></br>
   - JWT_SECRET=<your_jwt_secret></br>
   - JWT_ALGORITHM=HS256</br>
+
+**5. Testing Application**
+
+- Access the frontend in your browser via the links above.
+- Use tools like Postman or MongoDB Compass to test the API and verify database entries.
+  
