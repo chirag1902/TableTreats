@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from app.routers import restaurant_router
+from app.routers.reservation_router import router as reservation_router
 
 app = FastAPI(title="TableTreats Restaurant API")
 
@@ -25,6 +26,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
 app.include_router(restaurant_router.router, prefix="/api", tags=["Restaurant"])
+app.include_router(reservation_router, prefix="/api", tags=["Reservations"])
 
 @app.get("/")
 def root():
