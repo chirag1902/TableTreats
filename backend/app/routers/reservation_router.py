@@ -1,0 +1,139 @@
+from fastapi import APIRouter, HTTPException, Depends
+from schemas.reservation_schema import (
+    ReservationCreate,
+    ReservationOut,
+    AvailabilityCheck,
+    AvailabilityResponse,
+    TimeSlotAvailability
+)
+from services import reservation_service
+from utils.auth import get_current_customer
+from typing import List
+
+router = APIRouter()
+
+@router.get("/restaurants/{restaurant_id}/hours/{date}")
+async def get_restaurant_hours(restaurant_id: str, date: str):
+    """Get restaurant operating hours for a specific date"""
+    hours = await reservation_service.get_restaurant_hours_for_date(
+        restaurant_id,
+        date
+    )
+    
+    if not hours:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    if hours.get("closed"):
+        return {
+            "closed": True,
+            "day": hours["day"],
+            "message": f"Restaurant is closed on {hours['day']}s"
+        }
+    
+    # Generate available time slots
+    time_slots = reservation_service.generate_time_slots(
+        hours["open"],
+        hours["close"]
+    )
+    
+    return {
+        "closed": False,
+        "day": hours["day"],
+        "open": hours["open"],
+        "close": hours["close"],
+        "available_slots": time_slots
+    }
+
+@router.post("/reservations/check-availability", response_model=AvailabilityResponse)
+async def check_availability(data: AvailabilityCheck):
+    """Check availability for a specific time slot"""
+    availability = await reservation_service.check_availability(
+        data.restaurant_id,
+        data.date,
+        data.time_slot
+    )
+    
+    if "error" in availability:
+        raise HTTPException(status_code=400, detail=availability["error"])
+    
+    return availability
+
+@router.get("/reservations/availability/{restaurant_id}/{date}", response_model=List[TimeSlotAvailability])
+async def get_daily_availability(restaurant_id: str, date: str):
+    """Get availability for all time slots on a given date"""
+    availability = await reservation_service.get_daily_availability(
+        restaurant_id,
+        date
+    )
+    
+    if not availability:
+        raise HTTPException(
+            status_code=404,
+            detail="Restaurant not found or closed on this date"
+        )
+    
+    return availability
+
+@router.post("/reservations", response_model=ReservationOut)
+async def create_reservation(
+    reservation: ReservationCreate,
+    current_user: dict = Depends(get_current_customer)
+):
+    """Create a new reservation (Protected - Customer only)"""
+    
+    new_reservation = await reservation_service.create_reservation(
+        reservation.dict(),
+        current_user["email"]
+    )
+    
+    if not new_reservation:
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to create reservation. Restaurant may be closed, slot may be full, or time is outside operating hours."
+        )
+    
+    return new_reservation
+
+@router.get("/reservations/my-reservations", response_model=List[ReservationOut])
+async def get_my_reservations(current_user: dict = Depends(get_current_customer)):
+    """Get all reservations for the logged-in customer"""
+    reservations = await reservation_service.get_customer_reservations(
+        current_user["email"]
+    )
+    return reservations
+
+@router.get("/reservations/{reservation_id}", response_model=ReservationOut)
+async def get_reservation(
+    reservation_id: str,
+    current_user: dict = Depends(get_current_customer)
+):
+    """Get a specific reservation"""
+    reservation = await reservation_service.get_reservation_by_id(reservation_id)
+    
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    
+    # Ensure customer can only see their own reservations
+    if reservation["customer_email"] != current_user["email"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view this reservation")
+    
+    return reservation
+
+@router.delete("/reservations/{reservation_id}")
+async def cancel_reservation(
+    reservation_id: str,
+    current_user: dict = Depends(get_current_customer)
+):
+    """Cancel a reservation"""
+    success = await reservation_service.cancel_reservation(
+        reservation_id,
+        current_user["email"]
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Reservation not found or already cancelled"
+        )
+    
+    return {"message": "Reservation cancelled successfully"}

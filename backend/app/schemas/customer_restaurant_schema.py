@@ -29,3 +29,4 @@ class RestaurantDetails(BaseModel):
     hours: Dict = {}
     rating: float
     totalReviews: int
+    Total_Capacity: int

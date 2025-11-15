@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth_customer, customer_restaurant_router
+from routers import auth_customer, customer_restaurant_router, reservation_router  # Add this
 
 app = FastAPI()
 
@@ -16,3 +16,4 @@ app.add_middleware(
 # Routers
 app.include_router(auth_customer.router, prefix="/auth", tags=["Auth"])
 app.include_router(customer_restaurant_router.router, tags=["Customer-Restaurants"])
+app.include_router(reservation_router.router, prefix="/api", tags=["Reservations"])  # Add this
