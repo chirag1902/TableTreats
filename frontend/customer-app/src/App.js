@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import RestaurantDetails from "./pages/RestaurantDetails";
+import MyReservations from "./pages/MyReservations";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 
@@ -18,8 +19,8 @@ function ProtectedRoute({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("authToken");
-    const userData = sessionStorage.getItem("userData");
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("userData");
 
     console.log("ProtectedRoute check:", {
       hasToken: !!token,
@@ -46,8 +47,8 @@ function ProtectedRoute({ children }) {
 
 // Public Route wrapper (redirects to dashboard if already logged in)
 function PublicRoute({ children }) {
-  const token = sessionStorage.getItem("authToken");
-  const userData = sessionStorage.getItem("userData");
+  const token = localStorage.getItem("token");
+  const userData = localStorage.getItem("userData");
 
   if (token && userData) {
     return <Navigate to="/dashboard" replace />;
@@ -90,12 +91,21 @@ function App() {
             </ProtectedRoute>
           }
         />
-        
+
         <Route
           path="/restaurant/:id"
           element={
             <ProtectedRoute>
               <RestaurantDetails />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-reservations"
+          element={
+            <ProtectedRoute>
+              <MyReservations />
             </ProtectedRoute>
           }
         />

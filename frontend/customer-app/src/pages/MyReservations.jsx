@@ -1,28 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getMyReservations, cancelReservation } from '../services/api';
-import { 
-  Calendar, Clock, Users, Search, Filter, 
-  CheckCircle, XCircle, AlertCircle, Phone,
-  Mail, ChevronLeft, Star, User
-} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { getMyReservations, cancelReservation } from "../services/api";
+import {
+  Calendar,
+  Clock,
+  Users,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Phone,
+  ChevronLeft,
+  Star,
+  User,
+} from "lucide-react";
 
 export default function MyReservations() {
   const navigate = useNavigate();
   const [reservations, setReservations] = useState([]);
   const [filteredReservations, setFilteredReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('all');
+  const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
 
   // Fetch reservations from API
   useEffect(() => {
     const fetchReservations = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        navigate('/login');
+        navigate("/login");
         return;
       }
 
@@ -31,10 +40,10 @@ export default function MyReservations() {
         const data = await getMyReservations();
         setReservations(data);
         setFilteredReservations(data);
-        setError('');
+        setError("");
       } catch (err) {
-        console.error('Failed to fetch reservations:', err);
-        setError('Failed to load reservations. Please try again.');
+        console.error("Failed to fetch reservations:", err);
+        setError("Failed to load reservations. Please try again.");
         setReservations([]);
         setFilteredReservations([]);
       } finally {
@@ -50,27 +59,32 @@ export default function MyReservations() {
     let filtered = reservations;
 
     // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(r => r.status === statusFilter);
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((r) => r.status === statusFilter);
     }
 
     // Date filter
-    const today = new Date().toISOString().split('T')[0];
-    if (dateFilter === 'today') {
-      filtered = filtered.filter(r => r.date === today);
-    } else if (dateFilter === 'upcoming') {
-      filtered = filtered.filter(r => r.date >= today && r.status !== 'cancelled');
-    } else if (dateFilter === 'past') {
-      filtered = filtered.filter(r => r.date < today);
+    const today = new Date().toISOString().split("T")[0];
+    if (dateFilter === "today") {
+      filtered = filtered.filter((r) => r.date === today);
+    } else if (dateFilter === "upcoming") {
+      filtered = filtered.filter(
+        (r) => r.date >= today && r.status !== "cancelled"
+      );
+    } else if (dateFilter === "past") {
+      filtered = filtered.filter((r) => r.date < today);
     }
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(r => 
-        r.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.restaurant_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.customer_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.customer_phone?.includes(searchQuery)
+      filtered = filtered.filter(
+        (r) =>
+          r.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.restaurant_name
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          r.customer_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.customer_phone?.includes(searchQuery)
       );
     }
 
@@ -78,60 +92,70 @@ export default function MyReservations() {
   }, [reservations, statusFilter, dateFilter, searchQuery]);
 
   const handleCancelReservation = async (reservationId) => {
-    const confirmed = window.confirm('Are you sure you want to cancel this reservation?');
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this reservation?"
+    );
     if (!confirmed) return;
 
     try {
       await cancelReservation(reservationId);
-      
+
       // Update local state
-      setReservations(reservations.map(r => 
-        r.id === reservationId ? { ...r, status: 'cancelled' } : r
-      ));
-      
-      alert('Reservation cancelled successfully');
+      setReservations(
+        reservations.map((r) =>
+          r.id === reservationId ? { ...r, status: "cancelled" } : r
+        )
+      );
+
+      alert("Reservation cancelled successfully");
     } catch (err) {
-      console.error('Failed to cancel reservation:', err);
-      alert('Failed to cancel reservation. Please try again.');
+      console.error("Failed to cancel reservation:", err);
+      alert("Failed to cancel reservation. Please try again.");
     }
   };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-700 border-green-300';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'cancelled':
-        return 'bg-red-100 text-red-700 border-red-300';
-      case 'completed':
-        return 'bg-blue-100 text-blue-700 border-blue-300';
+      case "confirmed":
+        return "bg-green-100 text-green-700 border-green-300";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700 border-yellow-300";
+      case "cancelled":
+        return "bg-red-100 text-red-700 border-red-300";
+      case "completed":
+        return "bg-blue-100 text-blue-700 border-blue-300";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
-      case 'confirmed':
+      case "confirmed":
         return <CheckCircle className="w-4 h-4" />;
-      case 'pending':
+      case "pending":
         return <AlertCircle className="w-4 h-4" />;
-      case 'cancelled':
+      case "cancelled":
         return <XCircle className="w-4 h-4" />;
-      case 'completed':
+      case "completed":
         return <CheckCircle className="w-4 h-4" />;
       default:
         return null;
     }
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const stats = {
     total: reservations.length,
-    confirmed: reservations.filter(r => r.status?.toLowerCase() === 'confirmed').length,
-    upcoming: reservations.filter(r => r.date >= today && r.status?.toLowerCase() !== 'cancelled').length,
-    cancelled: reservations.filter(r => r.status?.toLowerCase() === 'cancelled').length
+    confirmed: reservations.filter(
+      (r) => r.status?.toLowerCase() === "confirmed"
+    ).length,
+    upcoming: reservations.filter(
+      (r) => r.date >= today && r.status?.toLowerCase() !== "cancelled"
+    ).length,
+    cancelled: reservations.filter(
+      (r) => r.status?.toLowerCase() === "cancelled"
+    ).length,
   };
 
   if (loading) {
@@ -153,19 +177,23 @@ export default function MyReservations() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate("/dashboard")}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-6 h-6 text-gray-600" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">My Reservations</h1>
-                <p className="text-sm text-gray-500">View and manage your bookings</p>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  My Reservations
+                </h1>
+                <p className="text-sm text-gray-500">
+                  View and manage your bookings
+                </p>
               </div>
             </div>
 
-            <button 
-              onClick={() => navigate('/')}
+            <button
+              onClick={() => navigate("/dashboard")}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all"
             >
               <Calendar className="w-4 h-4" />
@@ -202,10 +230,14 @@ export default function MyReservations() {
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <span className="text-sm text-green-600 font-semibold">Active</span>
+              <span className="text-sm text-green-600 font-semibold">
+                Active
+              </span>
             </div>
             <h3 className="text-gray-600 text-sm mb-1">Confirmed</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.confirmed}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {stats.confirmed}
+            </p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-lg">
@@ -213,7 +245,9 @@ export default function MyReservations() {
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
                 <Star className="w-6 h-6 text-white" />
               </div>
-              <span className="text-sm text-purple-600 font-semibold">Soon</span>
+              <span className="text-sm text-purple-600 font-semibold">
+                Soon
+              </span>
             </div>
             <h3 className="text-gray-600 text-sm mb-1">Upcoming</h3>
             <p className="text-3xl font-bold text-gray-900">{stats.upcoming}</p>
@@ -224,10 +258,14 @@ export default function MyReservations() {
               <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
                 <XCircle className="w-6 h-6 text-white" />
               </div>
-              <span className="text-sm text-red-600 font-semibold">Cancelled</span>
+              <span className="text-sm text-red-600 font-semibold">
+                Cancelled
+              </span>
             </div>
             <h3 className="text-gray-600 text-sm mb-1">Cancelled</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.cancelled}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {stats.cancelled}
+            </p>
           </div>
         </div>
 
@@ -283,21 +321,24 @@ export default function MyReservations() {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold text-gray-900">
-              {filteredReservations.length} Reservation{filteredReservations.length !== 1 ? 's' : ''}
+              {filteredReservations.length} Reservation
+              {filteredReservations.length !== 1 ? "s" : ""}
             </h2>
           </div>
 
           {filteredReservations.length === 0 ? (
             <div className="p-12 text-center">
               <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No reservations found</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No reservations found
+              </h3>
               <p className="text-gray-500 mb-6">
-                {reservations.length === 0 
-                  ? "You haven't made any reservations yet" 
+                {reservations.length === 0
+                  ? "You haven't made any reservations yet"
                   : "Try adjusting your filters or search query"}
               </p>
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate("/dashboard")}
                 className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
               >
                 Browse Restaurants
@@ -306,13 +347,16 @@ export default function MyReservations() {
           ) : (
             <div className="divide-y">
               {filteredReservations.map((reservation) => (
-                <div key={reservation.id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div
+                  key={reservation.id}
+                  className="p-6 hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     {/* Restaurant Info */}
                     <div className="flex-1">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                          {reservation.restaurant_name?.charAt(0) || 'R'}
+                          {reservation.restaurant_name?.charAt(0) || "R"}
                         </div>
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-gray-900 mb-1">
@@ -343,7 +387,9 @@ export default function MyReservations() {
                         <Calendar className="w-5 h-5 text-pink-500" />
                         <div>
                           <div className="text-xs text-gray-500">Date</div>
-                          <div className="font-semibold">{reservation.date}</div>
+                          <div className="font-semibold">
+                            {reservation.date}
+                          </div>
                         </div>
                       </div>
 
@@ -351,7 +397,9 @@ export default function MyReservations() {
                         <Clock className="w-5 h-5 text-purple-500" />
                         <div>
                           <div className="text-xs text-gray-500">Time</div>
-                          <div className="font-semibold">{reservation.time_slot}</div>
+                          <div className="font-semibold">
+                            {reservation.time_slot}
+                          </div>
                         </div>
                       </div>
 
@@ -359,27 +407,37 @@ export default function MyReservations() {
                         <Users className="w-5 h-5 text-blue-500" />
                         <div>
                           <div className="text-xs text-gray-500">Guests</div>
-                          <div className="font-semibold">{reservation.number_of_guests}</div>
+                          <div className="font-semibold">
+                            {reservation.number_of_guests}
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Status & Actions */}
                     <div className="flex flex-col gap-3">
-                      <span className={`px-4 py-2 rounded-full text-sm font-semibold border-2 flex items-center gap-2 justify-center ${getStatusColor(reservation.status)}`}>
+                      <span
+                        className={`px-4 py-2 rounded-full text-sm font-semibold border-2 flex items-center gap-2 justify-center ${getStatusColor(
+                          reservation.status
+                        )}`}
+                      >
                         {getStatusIcon(reservation.status)}
-                        {reservation.status?.charAt(0).toUpperCase() + reservation.status?.slice(1)}
+                        {reservation.status?.charAt(0).toUpperCase() +
+                          reservation.status?.slice(1)}
                       </span>
 
-                      {reservation.status?.toLowerCase() !== 'cancelled' && reservation.status?.toLowerCase() !== 'completed' && (
-                        <button
-                          onClick={() => handleCancelReservation(reservation.id)}
-                          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-semibold flex items-center gap-2 justify-center"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          Cancel
-                        </button>
-                      )}
+                      {reservation.status?.toLowerCase() !== "cancelled" &&
+                        reservation.status?.toLowerCase() !== "completed" && (
+                          <button
+                            onClick={() =>
+                              handleCancelReservation(reservation.id)
+                            }
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-semibold flex items-center gap-2 justify-center"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Cancel
+                          </button>
+                        )}
                     </div>
                   </div>
                 </div>

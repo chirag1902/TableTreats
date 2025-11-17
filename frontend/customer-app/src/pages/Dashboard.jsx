@@ -3,7 +3,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, MapPin, User, LogOut, Star } from "lucide-react";
 import { logout } from "../services/authService";
-import { getAllRestaurants, searchRestaurants } from "../services/restaurantService";
+import {
+  getAllRestaurants,
+  searchRestaurants,
+} from "../services/restaurantService";
 import logoImage from "../assets/logo.png";
 
 export default function Dashboard() {
@@ -38,8 +41,8 @@ export default function Dashboard() {
   ];
 
   useEffect(() => {
-    const token = sessionStorage.getItem("authToken");
-    const userDataStr = sessionStorage.getItem("userData");
+    const token = localStorage.getItem("token");
+    const userDataStr = localStorage.getItem("userData");
 
     if (!token || !userDataStr) {
       navigate("/login");
@@ -56,8 +59,8 @@ export default function Dashboard() {
     }
 
     const handleAuthLogout = () => {
-      sessionStorage.removeItem("authToken");
-      sessionStorage.removeItem("userData");
+      localStorage.removeItem("token");
+      localStorage.removeItem("userData");
       navigate("/login");
     };
 
@@ -67,6 +70,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchRestaurants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory, selectedFilter, userLocation]);
 
   useEffect(() => {
@@ -79,6 +83,7 @@ export default function Dashboard() {
     }, 500);
 
     return () => clearTimeout(delaySearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   const fetchRestaurants = async () => {
@@ -88,7 +93,7 @@ export default function Dashboard() {
 
       const params = {
         limit: 20,
-        skip: 0
+        skip: 0,
       };
 
       if (selectedCategory !== "All") {
@@ -126,8 +131,8 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     logout();
-    sessionStorage.removeItem("authToken");
-    sessionStorage.removeItem("userData");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userData");
     navigate("/login");
   };
 
@@ -137,23 +142,23 @@ export default function Dashboard() {
 
   const getCategoryEmoji = (cuisines) => {
     if (!cuisines || cuisines.length === 0) return "🍽️";
-    
+
     const cuisine = cuisines[0].toLowerCase();
-    const category = categories.find(cat => 
+    const category = categories.find((cat) =>
       cuisine.includes(cat.name.toLowerCase())
     );
-    
+
     return category ? category.emoji : "🍽️";
   };
 
   const getCategoryGradient = (cuisines) => {
     if (!cuisines || cuisines.length === 0) return "from-gray-400 to-gray-600";
-    
+
     const cuisine = cuisines[0].toLowerCase();
-    const category = categories.find(cat => 
+    const category = categories.find((cat) =>
       cuisine.includes(cat.name.toLowerCase())
     );
-    
+
     return category ? category.gradient : "from-gray-400 to-gray-600";
   };
 
@@ -164,9 +169,9 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <img 
-                src={logoImage} 
-                alt="TableTreats Logo" 
+              <img
+                src={logoImage}
+                alt="TableTreats Logo"
                 className="w-10 h-10 object-contain"
               />
               <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
@@ -237,7 +242,9 @@ export default function Dashboard() {
                 key={category.name}
                 onClick={() => setSelectedCategory(category.name)}
                 className={`flex flex-col items-center gap-2 min-w-[80px] transition-transform hover:scale-110 ${
-                  selectedCategory === category.name ? "transform scale-110" : ""
+                  selectedCategory === category.name
+                    ? "transform scale-110"
+                    : ""
                 }`}
               >
                 <div
@@ -292,7 +299,9 @@ export default function Dashboard() {
         {!loading && !error && restaurants.length > 0 && (
           <div>
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              {searchQuery ? `Search Results for "${searchQuery}"` : `🍽️ Available Restaurants`}
+              {searchQuery
+                ? `Search Results for "${searchQuery}"`
+                : `🍽️ Available Restaurants`}
             </h2>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -303,7 +312,9 @@ export default function Dashboard() {
                   className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 cursor-pointer"
                 >
                   <div
-                    className={`h-48 bg-gradient-to-br ${getCategoryGradient(restaurant.cuisine)} relative flex items-center justify-center`}
+                    className={`h-48 bg-gradient-to-br ${getCategoryGradient(
+                      restaurant.cuisine
+                    )} relative flex items-center justify-center`}
                   >
                     {restaurant.thumbnail ? (
                       <img
@@ -312,7 +323,9 @@ export default function Dashboard() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="text-8xl">{getCategoryEmoji(restaurant.cuisine)}</div>
+                      <div className="text-8xl">
+                        {getCategoryEmoji(restaurant.cuisine)}
+                      </div>
                     )}
                   </div>
 
@@ -324,20 +337,23 @@ export default function Dashboard() {
                     <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="font-semibold">{restaurant.rating}</span>
+                        <span className="font-semibold">
+                          {restaurant.rating}
+                        </span>
                         <span>({restaurant.totalReviews})</span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      {restaurant.cuisine && restaurant.cuisine.slice(0, 2).map((cuisine, idx) => (
-                        <span
-                          key={idx}
-                          className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full"
-                        >
-                          {cuisine}
-                        </span>
-                      ))}
+                      {restaurant.cuisine &&
+                        restaurant.cuisine.slice(0, 2).map((cuisine, idx) => (
+                          <span
+                            key={idx}
+                            className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full"
+                          >
+                            {cuisine}
+                          </span>
+                        ))}
                     </div>
 
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">
@@ -349,9 +365,7 @@ export default function Dashboard() {
                       <span className="truncate">{restaurant.city}</span>
                     </div>
 
-                    <button
-                      className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all"
-                    >
+                    <button className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all">
                       View Details
                     </button>
                   </div>
@@ -365,8 +379,12 @@ export default function Dashboard() {
         {!loading && !error && restaurants.length === 0 && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-2xl font-bold text-gray-700 mb-2">No restaurants found</h3>
-            <p className="text-gray-500">Try adjusting your filters or search query</p>
+            <h3 className="text-2xl font-bold text-gray-700 mb-2">
+              No restaurants found
+            </h3>
+            <p className="text-gray-500">
+              Try adjusting your filters or search query
+            </p>
           </div>
         )}
       </main>

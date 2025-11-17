@@ -59,7 +59,7 @@ export default function Login() {
 
       // Validate that we have the required data
       if (!result || !result.token || !result.user) {
-        throw { detail: "Invalid response from server" };
+        throw new Error("Invalid response from server");
       }
 
       setSubmitMessage({
@@ -67,9 +67,9 @@ export default function Login() {
         text: "Login successful! Redirecting...",
       });
 
-      // Store auth data in sessionStorage
-      sessionStorage.setItem("authToken", result.token);
-      sessionStorage.setItem("userData", JSON.stringify(result.user));
+      // Store auth data in localStorage
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("userData", JSON.stringify(result.user));
 
       // Redirect to dashboard after short delay
       setTimeout(() => {
