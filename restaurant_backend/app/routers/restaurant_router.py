@@ -97,6 +97,7 @@ async def complete_profile(
     cuisine: str = Form(...),
     features: str = Form(...),
     hours: str = Form(...),
+    total_capacity: int = Form(50, description="Total seating capacity per time slot"),
     thumbnail: Optional[UploadFile] = File(None),
     ambiance_photo_0: Optional[UploadFile] = File(None),
     ambiance_photo_1: Optional[UploadFile] = File(None),
@@ -112,14 +113,15 @@ async def complete_profile(
 ):
     """Complete restaurant profile with photos stored in MongoDB (Protected route)"""
     
-    # Get restaurant from database
     restaurant = await db.restaurants.find_one({"email": current_user["email"]})
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     
     restaurant_id = str(restaurant["_id"])
     
-    # Parse JSON fields
+    if total_capacity < 1 or total_capacity > 500:
+        raise HTTPException(status_code=400, detail="Total capacity must be between 1 and 500")
+    
     try:
         cuisines_list = json.loads(cuisine)
         features_list = json.loads(features)
@@ -127,7 +129,6 @@ async def complete_profile(
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format in cuisine, features, or hours")
     
-    # Upload thumbnail to GridFS
     thumbnail_id = None
     if thumbnail:
         thumbnail_id = await upload_image_to_gridfs(
@@ -135,7 +136,6 @@ async def complete_profile(
             metadata={"restaurant_id": restaurant_id, "type": "thumbnail"}
         )
     
-    # Upload ambiance photos to GridFS
     ambiance_photo_ids = []
     for i in range(6):
         photo = locals().get(f'ambiance_photo_{i}')
@@ -146,7 +146,6 @@ async def complete_profile(
             )
             ambiance_photo_ids.append(photo_id)
     
-    # Upload menu photos to GridFS
     menu_photo_ids = []
     for i in range(4):
         photo = locals().get(f'menu_photo_{i}')
@@ -157,7 +156,13 @@ async def complete_profile(
             )
             menu_photo_ids.append(photo_id)
     
-    # Update restaurant in database with GridFS file IDs
+    seating_config = {
+        "total_capacity": total_capacity,
+        "advance_booking_days": 7,
+        "min_party_size": 1,
+        "max_party_size": 10
+    }
+    
     update_data = {
         "restaurant_name": restaurant_name,
         "address": address,
@@ -168,11 +173,11 @@ async def complete_profile(
         "cuisines": cuisines_list,
         "features": features_list,
         "hours": hours_dict,
+        "seating_config": seating_config,
         "is_onboarded": True,
         "updated_at": datetime.utcnow()
     }
     
-    # Add photo IDs if uploaded
     if thumbnail_id:
         update_data["thumbnail_id"] = thumbnail_id
     if ambiance_photo_ids:
@@ -187,7 +192,8 @@ async def complete_profile(
     
     return {
         "message": "Profile completed successfully",
-        "restaurant_id": restaurant_id
+        "restaurant_id": restaurant_id,
+        "seating_config": seating_config
     }
 
 
@@ -446,4 +452,51 @@ async def update_restaurant_profile(
     return {
         "message": "Profile updated successfully",
         "restaurant_id": restaurant_id
+    }
+    
+@router.get("/restaurant/seating-config")
+async def get_seating_config(current_user: dict = Depends(get_current_restaurant)):
+    """Get current seating configuration"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    seating_config = restaurant.get("seating_config", {
+        "total_capacity": 50,
+        "advance_booking_days": 7,
+        "min_party_size": 1,
+        "max_party_size": 10
+    })
+    
+    return {
+        "restaurant_id": str(restaurant["_id"]),
+        "restaurant_name": restaurant.get("restaurant_name"),
+        "seating_config": seating_config
+    }
+
+
+@router.put("/restaurant/seating-config")
+async def update_seating_config(
+    total_capacity: int,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Update restaurant seating capacity"""
+    if total_capacity < 1 or total_capacity > 500:
+        raise HTTPException(status_code=400, detail="Total capacity must be between 1 and 500")
+    
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    await db.restaurants.update_one(
+        {"_id": restaurant["_id"]},
+        {"$set": {
+            "seating_config.total_capacity": total_capacity,
+            "updated_at": datetime.utcnow()
+        }}
+    )
+    
+    return {
+        "message": "Seating capacity updated successfully",
+        "total_capacity": total_capacity
     }
