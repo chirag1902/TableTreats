@@ -92,7 +92,33 @@ export default function RestaurantDetails() {
   const fetchAvailableSlots = async () => {
     try {
       const data = await getDailyAvailability(restaurant.id, bookingData.date);
-      setAvailableSlots(data.available_slots || []);
+
+      // Backend returns array directly, not wrapped in object
+      if (Array.isArray(data)) {
+        // Filter out slots that have already passed (only for today)
+        const today = new Date().toISOString().split("T")[0];
+        const isToday = bookingData.date === today;
+
+        if (isToday) {
+          const now = new Date();
+          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+          // Filter slots that are at least 30 minutes ahead
+          const filteredSlots = data.filter((slot) => {
+            const [hours, minutes] = slot.time_slot.split(":").map(Number);
+            const slotMinutes = hours * 60 + minutes;
+
+            // Slot must be at least 30 minutes from now
+            return slotMinutes >= currentMinutes + 30;
+          });
+
+          setAvailableSlots(filteredSlots);
+        } else {
+          setAvailableSlots(data);
+        }
+      } else {
+        setAvailableSlots([]);
+      }
     } catch (err) {
       console.error("Error fetching available slots:", err);
       setBookingError(
@@ -109,7 +135,7 @@ export default function RestaurantDetails() {
 
     try {
       const reservationData = {
-        restaurant_id: parseInt(id),
+        restaurant_id: id,
         ...bookingData,
       };
 
@@ -675,30 +701,40 @@ export default function RestaurantDetails() {
                     <Clock className="w-4 h-4 inline mr-1" />
                     Select Time
                   </label>
-                  <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-                    {availableSlots.map((slot, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        disabled={!slot.available}
-                        onClick={() =>
-                          setBookingData({
-                            ...bookingData,
-                            time_slot: slot.time,
-                          })
-                        }
-                        className={`px-4 py-3 rounded-xl font-semibold transition-all ${
-                          bookingData.time_slot === slot.time
-                            ? "bg-purple-600 text-white"
-                            : slot.available
-                            ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                            : "bg-gray-50 text-gray-400 cursor-not-allowed"
-                        }`}
-                      >
-                        {slot.time}
-                      </button>
-                    ))}
-                  </div>
+                  {availableSlots.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                      {availableSlots.map((slot, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          disabled={!slot.available}
+                          onClick={() =>
+                            setBookingData({
+                              ...bookingData,
+                              time_slot: slot.time_slot,
+                            })
+                          }
+                          className={`px-4 py-3 rounded-xl font-semibold transition-all ${
+                            bookingData.time_slot === slot.time_slot
+                              ? "bg-purple-600 text-white"
+                              : slot.available
+                              ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                              : "bg-gray-50 text-gray-400 cursor-not-allowed"
+                          }`}
+                        >
+                          {slot.time_slot}
+                          {!slot.available && (
+                            <span className="block text-xs mt-1">Full</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                      <p>No available time slots for this date</p>
+                    </div>
+                  )}
                 </div>
               )}
 

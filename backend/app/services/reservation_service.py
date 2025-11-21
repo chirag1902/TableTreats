@@ -100,7 +100,9 @@ async def check_availability(
             "error": f"Time slot {time_slot} is outside operating hours ({hours_info['open']} - {hours_info['close']})"
         }
     
-    total_capacity = restaurant.get("Total_Capacity", 0)
+    # Get total capacity from seating_config
+    seating_config = restaurant.get("seating_config", {})
+    total_capacity = seating_config.get("total_capacity", 0)
     
     # Check existing bookings for this slot
     timeslot_doc = await Restaurant_db.timeslots.find_one({
@@ -141,7 +143,9 @@ async def get_daily_availability(
     # Generate time slots based on operating hours
     time_slots = generate_time_slots(hours_info["open"], hours_info["close"])
     
-    total_capacity = restaurant.get("Total_Capacity", 0)
+    # Get total capacity from seating_config
+    seating_config = restaurant.get("seating_config", {})
+    total_capacity = seating_config.get("total_capacity", 0)
     
     # Get all booked slots for this date
     cursor = Restaurant_db.timeslots.find({
