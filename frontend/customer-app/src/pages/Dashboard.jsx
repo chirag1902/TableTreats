@@ -200,7 +200,10 @@ export default function Dashboard() {
                 </span>
               </button>
 
-              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full hover:shadow-lg transition-all">
+              <button 
+                onClick={() => navigate("/profile")}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full hover:shadow-lg transition-all cursor-pointer"
+              >
                 <User className="w-4 h-4 text-purple-600" />
                 <span className="text-sm font-medium hidden sm:inline">
                   {userName}

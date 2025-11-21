@@ -68,14 +68,31 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return {"email": email, "role": role}
 
-async def get_current_customer(current_user: dict = Depends(get_current_user)) -> dict:
-    """Dependency to ensure user is a customer"""
-    if current_user.get("role") != "customer":
+async def get_current_customer(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify JWT token and return current user"""
+    token = credentials.credentials
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        role: str = payload.get("role")
+        user_id: str = payload.get("user_id")
+        
+        if email is None or role != "customer":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials"
+            )
+        
+        return {"email": email, "role": role, "user_id": user_id}
+    
+    except JWTError:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized as customer"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials"
         )
-    return current_user
+
+
 
 async def get_current_restaurant(current_user: dict = Depends(get_current_user)) -> dict:
     """Dependency to ensure user is a restaurant"""

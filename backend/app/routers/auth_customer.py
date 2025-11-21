@@ -37,3 +37,4 @@ async def protected_route(current_user: dict = Depends(get_current_customer)):
         "user": current_user["email"],
         "role": current_user["role"]
     }
+

@@ -1,4 +1,3 @@
-# schemas/user_schema.py
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
@@ -12,11 +11,13 @@ class CustomerLogin(BaseModel):
     password: str
 
 class CustomerOut(BaseModel):
+    id: str
     email: EmailStr
     full_name: str
     role: str
 
 class UserData(BaseModel):
+    id: str
     email: EmailStr
     full_name: str
     role: str
@@ -24,4 +25,4 @@ class UserData(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
-    user: UserData  # Add this to include user data in login response
+    user: UserData

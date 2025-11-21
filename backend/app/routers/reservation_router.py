@@ -102,6 +102,20 @@ async def get_my_reservations(current_user: dict = Depends(get_current_customer)
     )
     return reservations
 
+# NEW ROUTE - Get reservations by customer email (for profile page)
+@router.get("/reservations/customer/{customer_email}", response_model=List[ReservationOut])
+async def get_customer_reservations_by_email(
+    customer_email: str,
+    current_user: dict = Depends(get_current_customer)
+):
+    """Get all reservations for a customer by email (Protected)"""
+    # Ensure user can only access their own reservations
+    if current_user["email"] != customer_email:
+        raise HTTPException(status_code=403, detail="Not authorized to access these reservations")
+    
+    reservations = await reservation_service.get_customer_reservations(customer_email)
+    return reservations
+
 @router.get("/reservations/{reservation_id}", response_model=ReservationOut)
 async def get_reservation(
     reservation_id: str,

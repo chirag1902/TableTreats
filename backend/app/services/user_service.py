@@ -1,4 +1,3 @@
-# services/user_service.py
 from database import Customer_db
 from utils.auth import hash_password, verify_password, create_access_token
 from datetime import timedelta
@@ -14,8 +13,10 @@ async def create_customer(user_data: dict):
     user_data["password"] = hash_password(user_data["password"])
     user_data["role"] = "customer"
     
-    await Customer_db.users.insert_one(user_data)
+    result = await Customer_db.users.insert_one(user_data)
+    
     return {
+        "id": str(result.inserted_id),
         "email": user_data["email"],
         "full_name": user_data["full_name"],
         "role": "customer"
@@ -32,7 +33,7 @@ async def customer_login(email: str, password: str):
     # Create JWT token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": email, "role": "customer"},
+        data={"sub": email, "role": "customer", "user_id": str(user["_id"])},
         expires_delta=access_token_expires
     )
 
@@ -41,6 +42,7 @@ async def customer_login(email: str, password: str):
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
+            "id": str(user["_id"]),
             "email": email,
             "full_name": user.get("full_name", ""),
             "role": "customer"
@@ -52,5 +54,17 @@ async def get_customer_by_email(email: str):
     user = await Customer_db.users.find_one({"email": email, "role": "customer"})
     if user:
         user.pop("password", None)  # Don't return password
-        user["_id"] = str(user["_id"])  # Convert ObjectId to string
+        user["id"] = str(user["_id"])
+        user.pop("_id", None)
     return user
+
+async def get_customer_by_id(user_id: str):
+    """Get customer by ID"""
+    from bson import ObjectId
+    user = await Customer_db.users.find_one({"_id": ObjectId(user_id), "role": "customer"})
+    if user:
+        user.pop("password", None)
+        user["id"] = str(user["_id"])
+        user.pop("_id", None)
+    return user
+

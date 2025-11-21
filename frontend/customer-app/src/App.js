@@ -10,6 +10,7 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import RestaurantDetails from "./pages/RestaurantDetails";
 import MyReservations from "./pages/MyReservations";
+import Profile from "./pages/Profile"; // ADD THIS IMPORT
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 
@@ -106,6 +107,16 @@ function App() {
           element={
             <ProtectedRoute>
               <MyReservations />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ADD THIS NEW PROFILE ROUTE */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
