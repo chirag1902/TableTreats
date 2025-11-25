@@ -3,6 +3,7 @@ import RestaurantDashboard from "./pages/Dashboard";
 import RestaurantOnboarding from "./pages/OnboardingForm";
 import RestaurantEditForm from "./pages/RestaurantEditForm";
 import SeatingConfiguration from './pages/SeatingConfiguration';
+import AllReservations from './pages/AllReservations';
 import SignIn from "./pages/SignIn";
 import Landing from "./pages/Landing";
 import SignUp from "./pages/Signup";
@@ -18,6 +19,7 @@ function App() {
         <Route path="/onboarding" element={<RestaurantOnboarding />} />
         <Route path="/edit-profile" element={<RestaurantEditForm />} />
         <Route path="/seating-configuration" element={<SeatingConfiguration />} />
+        <Route path="/reservations" element={<AllReservations />} />
         {/* Add other routes as needed */}
       </Routes>
     </Router>

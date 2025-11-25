@@ -25,7 +25,6 @@ export async function restaurantLogin(credentials) {
   return data;
 }
 
-
 export async function completeOnboarding(formData) {
   const token = localStorage.getItem('restaurant_token');
   
@@ -38,7 +37,6 @@ export async function completeOnboarding(formData) {
   payload.append('phone', formData.phone);
   payload.append('description', formData.description || '');
   
-  // Fix: Use 'cuisine' instead of 'cuisines'
   payload.append('cuisine', JSON.stringify(formData.cuisine));
   payload.append('features', JSON.stringify(formData.features));
   payload.append('hours', JSON.stringify(formData.hours));
@@ -69,12 +67,12 @@ export async function completeOnboarding(formData) {
   return data;
 }
 
-// Get today's reservations
+// FIXED: Removed duplicate /api from the URL
 export async function getTodayReservations() {
   const token = localStorage.getItem('restaurant_token');
   
   const { data } = await axios.get(
-    `${API_URL}/api/restaurant/reservations/today`,
+    `${API_URL}/restaurant/reservations/today`,  // Fixed: removed /api
     {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -113,12 +111,10 @@ export async function updateRestaurantProfile(formData) {
   payload.append('features', JSON.stringify(formData.features));
   payload.append('hours', JSON.stringify(formData.hours));
   
-  // Only send new thumbnail if uploaded
   if (formData.thumbnail) {
     payload.append('thumbnail', formData.thumbnail);
   }
   
-  // Only send new photos if uploaded
   formData.ambiancePhotos.forEach((photo, index) => {
     payload.append(`ambiance_photo_${index}`, photo);
   });

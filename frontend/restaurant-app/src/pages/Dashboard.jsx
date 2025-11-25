@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getRestaurantProfile , getTodayReservations} from '../api/restaurant';
 import { useNavigate } from 'react-router-dom';
 import { 
   MapPin, User, LogOut, Star, Calendar, 
   DollarSign, Users, TrendingUp, Edit, Clock,
-  CheckCircle, XCircle, Package, ImagePlus, Image, Phone, Armchair
+  CheckCircle, XCircle, Package, ImagePlus, Image, Phone, Armchair, RefreshCw
 } from 'lucide-react';
 
 export default function RestaurantDashboard() {
@@ -14,26 +14,61 @@ export default function RestaurantDashboard() {
   const [loading, setLoading] = useState(true);
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [galleryType, setGalleryType] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
+  const intervalRef = useRef(null);
 
-  useEffect(() => {
-    const fetchRestaurantData = async () => {
-      const token = localStorage.getItem('restaurant_token');
-      if (!token) {
-        navigate('/signin');
-        return;
+  // Function to fetch data
+  const fetchRestaurantData = async (isPolling = false) => {
+    if (isPolling) {
+      setIsRefreshing(true);
+    }
+
+    const token = localStorage.getItem('restaurant_token');
+    if (!token) {
+      navigate('/signin');
+      return;
+    }
+
+    try {
+      console.log('🔍 Fetching restaurant data...');
+      
+      const [profileData, reservationsData] = await Promise.all([
+        getRestaurantProfile(),
+        getTodayReservations()
+      ]);
+      
+      console.log('📊 Profile Data:', profileData);
+      console.log('📅 Today Reservations Data:', reservationsData);
+      
+      setRestaurantData(profileData);
+      
+      if (reservationsData) {
+        const reservations = Array.isArray(reservationsData) 
+          ? reservationsData 
+          : reservationsData.reservations || [];
+        
+        console.log('✅ Setting reservations:', reservations);
+        console.log('📊 Number of reservations:', reservations.length);
+        
+        setTodayReservations(reservations);
+      } else {
+        console.warn('⚠️ No reservations data received');
+        setTodayReservations([]);
+      }
+      
+      if (!profileData.isOnboarded) {
+        navigate('/onboarding');
       }
 
-      try {
-        const data = await getRestaurantProfile();
-        setRestaurantData(data);
-        
-        if (!data.isOnboarded) {
-          navigate('/onboarding');
-        }
-        
-      } catch (error) {
-        console.error('Failed to fetch restaurant data:', error);
-        
+      setLastRefreshTime(new Date());
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch restaurant data:', error);
+      console.error('Error details:', error.message);
+      
+      if (!isPolling) {
+        // Only set fallback data on initial load, not on polling
         setRestaurantData({
           name: "Your Restaurant",
           email: localStorage.getItem('restaurant_email') || "restaurant@example.com",
@@ -51,17 +86,50 @@ export default function RestaurantDashboard() {
           isOnboarded: false
         });
         
-      } finally {
-        setLoading(false);
+        setTodayReservations([]);
       }
-    };
+      
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
+  // Initial fetch
+  useEffect(() => {
     fetchRestaurantData();
   }, [navigate]);
+
+  // Set up polling - refresh every 2 minutes (120000ms)
+  useEffect(() => {
+    const POLLING_INTERVAL = 2 * 60 * 1000; // 2 minutes
+
+    intervalRef.current = setInterval(() => {
+      console.log('🔄 Auto-refreshing reservation data...');
+      fetchRestaurantData(true);
+    }, POLLING_INTERVAL);
+
+    // Cleanup interval on component unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  // Manual refresh button
+  const handleManualRefresh = () => {
+    console.log('🔄 Manual refresh triggered');
+    fetchRestaurantData(true);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('restaurant_token');
     localStorage.removeItem('restaurant_email');
+    // Clean up interval on logout
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
     navigate('/signin');
   };
 
@@ -116,19 +184,12 @@ export default function RestaurantDashboard() {
       gradient: "from-pink-500 to-purple-600",
       action: handleEditProfile
     },
-    // {
-    //   title: "Manage Reservations",
-    //   description: "View and manage table bookings",
-    //   icon: Calendar,
-    //   gradient: "from-blue-500 to-cyan-500",
-    //   action: () => navigate('/reservations')
-    // },
     {
-    title: "Seating Configuration",  // ADD THIS NEW ACTION
-    description: "Configure table arrangements",
-    icon: Armchair,
-    gradient: "from-indigo-500 to-purple-500",
-    action: () => navigate('/seating-configuration')
+      title: "Seating Configuration",
+      description: "Configure table arrangements",
+      icon: Armchair,
+      gradient: "from-indigo-500 to-purple-500",
+      action: () => navigate('/seating-configuration')
     },
     {
       title: "Menu Management",
@@ -146,7 +207,7 @@ export default function RestaurantDashboard() {
     }
   ];
 
-const recentReservations = todayReservations.slice(0, 4).map(reservation => ({
+  const recentReservations = todayReservations.slice(0, 4).map(reservation => ({
     id: reservation._id,
     name: reservation.customer_name,
     time: reservation.time_slot,
@@ -244,6 +305,17 @@ const recentReservations = todayReservations.slice(0, 4).map(reservation => ({
             </div>
 
             <div className="flex items-center gap-3">
+              <button 
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-full hover:shadow-lg transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 text-blue-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span className="text-sm font-medium text-blue-600 hidden sm:inline">
+                  {lastRefreshTime.toLocaleTimeString()}
+                </span>
+              </button>
+
               <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full hover:shadow-lg transition-all">
                 <User className="w-4 h-4 text-purple-600" />
                 <span className="text-sm font-medium hidden sm:inline">
@@ -409,44 +481,50 @@ const recentReservations = todayReservations.slice(0, 4).map(reservation => ({
           </div>
 
           <div className="space-y-4">
-            {recentReservations.map((reservation) => (
-              <div key={reservation.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-purple-50 rounded-xl hover:shadow-md transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                    {reservation.name.charAt(0)}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{reservation.name}</h4>
-                    <p className="text-sm text-gray-600">{reservation.guests} guests</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-gray-700">
-                      <Clock className="w-4 h-4" />
-                      <span className="font-semibold">{reservation.time}</span>
+            {recentReservations.length > 0 ? (
+              recentReservations.map((reservation) => (
+                <div key={reservation.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-purple-50 rounded-xl hover:shadow-md transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                      {reservation.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{reservation.name}</h4>
+                      <p className="text-sm text-gray-600">{reservation.guests} guests</p>
                     </div>
                   </div>
 
-                  {reservation.status === 'confirmed' ? (
-                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      Confirmed
-                    </span>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-                        <XCircle className="w-4 h-4" />
-                      </button>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 text-gray-700">
+                        <Clock className="w-4 h-4" />
+                        <span className="font-semibold">{reservation.time}</span>
+                      </div>
                     </div>
-                  )}
+
+                    {reservation.status === 'confirmed' ? (
+                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Confirmed
+                      </span>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <p>No reservations for today</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </main>
