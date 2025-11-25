@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { getRestaurantProfile } from '../api/restaurant';
+import { getRestaurantProfile , getTodayReservations} from '../api/restaurant';
 import { useNavigate } from 'react-router-dom';
 import { 
   MapPin, User, LogOut, Star, Calendar, 
   DollarSign, Users, TrendingUp, Edit, Clock,
-  CheckCircle, XCircle, Package, ImagePlus, Image, Phone
+  CheckCircle, XCircle, Package, ImagePlus, Image, Phone, Armchair
 } from 'lucide-react';
 
 export default function RestaurantDashboard() {
   const navigate = useNavigate();
   const [restaurantData, setRestaurantData] = useState(null);
+  const [todayReservations, setTodayReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [galleryType, setGalleryType] = useState('');
@@ -76,8 +77,7 @@ export default function RestaurantDashboard() {
   const stats = [
     {
       title: "Today's Reservations",
-      value: "12",
-      change: "+8%",
+      value: todayReservations.length.toString(),
       icon: Calendar,
       gradient: "from-blue-500 to-cyan-500",
       bgGradient: "from-blue-50 to-cyan-50"
@@ -116,12 +116,19 @@ export default function RestaurantDashboard() {
       gradient: "from-pink-500 to-purple-600",
       action: handleEditProfile
     },
+    // {
+    //   title: "Manage Reservations",
+    //   description: "View and manage table bookings",
+    //   icon: Calendar,
+    //   gradient: "from-blue-500 to-cyan-500",
+    //   action: () => navigate('/reservations')
+    // },
     {
-      title: "Manage Reservations",
-      description: "View and manage table bookings",
-      icon: Calendar,
-      gradient: "from-blue-500 to-cyan-500",
-      action: () => navigate('/reservations')
+    title: "Seating Configuration",  // ADD THIS NEW ACTION
+    description: "Configure table arrangements",
+    icon: Armchair,
+    gradient: "from-indigo-500 to-purple-500",
+    action: () => navigate('/seating-configuration')
     },
     {
       title: "Menu Management",
@@ -139,12 +146,13 @@ export default function RestaurantDashboard() {
     }
   ];
 
-  const recentReservations = [
-    { id: 1, name: "John Smith", time: "7:00 PM", guests: 4, status: "confirmed" },
-    { id: 2, name: "Sarah Johnson", time: "7:30 PM", guests: 2, status: "pending" },
-    { id: 3, name: "Mike Davis", time: "8:00 PM", guests: 6, status: "confirmed" },
-    { id: 4, name: "Emily Wilson", time: "8:30 PM", guests: 3, status: "pending" }
-  ];
+const recentReservations = todayReservations.slice(0, 4).map(reservation => ({
+    id: reservation._id,
+    name: reservation.customer_name,
+    time: reservation.time_slot,
+    guests: reservation.number_of_guests,
+    status: reservation.status
+  }));
 
   if (loading) {
     return (

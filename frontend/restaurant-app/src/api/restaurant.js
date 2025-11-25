@@ -69,6 +69,22 @@ export async function completeOnboarding(formData) {
   return data;
 }
 
+// Get today's reservations
+export async function getTodayReservations() {
+  const token = localStorage.getItem('restaurant_token');
+  
+  const { data } = await axios.get(
+    `${API_URL}/api/restaurant/reservations/today`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+  );
+  
+  return data;
+}
+
 export async function getRestaurantProfile() {
   const token = localStorage.getItem('restaurant_token');
   

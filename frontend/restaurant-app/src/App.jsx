@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import RestaurantDashboard from "./pages/Dashboard";
 import RestaurantOnboarding from "./pages/OnboardingForm";
 import RestaurantEditForm from "./pages/RestaurantEditForm";
+import SeatingConfiguration from './pages/SeatingConfiguration';
 import SignIn from "./pages/SignIn";
 import Landing from "./pages/Landing";
 import SignUp from "./pages/Signup";
@@ -16,6 +17,7 @@ function App() {
         <Route path="/dashboard" element={<RestaurantDashboard />} />
         <Route path="/onboarding" element={<RestaurantOnboarding />} />
         <Route path="/edit-profile" element={<RestaurantEditForm />} />
+        <Route path="/seating-configuration" element={<SeatingConfiguration />} />
         {/* Add other routes as needed */}
       </Routes>
     </Router>
