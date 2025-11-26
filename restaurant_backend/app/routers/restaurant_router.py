@@ -2,6 +2,8 @@
 from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Depends
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
+from app.schemas.seating_schema import SeatingConfigUpdate, SeatingConfigResponse, SeatingAreaResponse
+import uuid
 import json
 from bson import ObjectId
 from datetime import datetime
@@ -454,49 +456,163 @@ async def update_restaurant_profile(
         "restaurant_id": restaurant_id
     }
     
-@router.get("/restaurant/seating-config")
+# Add these imports to your restaurant_router.py
+from app.schemas.seating_schema import SeatingConfigUpdate, SeatingConfigResponse, SeatingAreaResponse
+import uuid
+
+# REPLACE your existing seating-config endpoints with these:
+
+@router.get("/restaurant/seating-config", response_model=SeatingConfigResponse)
 async def get_seating_config(current_user: dict = Depends(get_current_restaurant)):
-    """Get current seating configuration"""
+    """Get current seating configuration with detailed areas"""
     restaurant = await db.restaurants.find_one({"email": current_user["email"]})
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     
     seating_config = restaurant.get("seating_config", {
         "total_capacity": 50,
+        "seating_areas": [],
         "advance_booking_days": 7,
         "min_party_size": 1,
         "max_party_size": 10
     })
     
+    # If old format (just total_capacity), convert to new format
+    if "seating_areas" not in seating_config:
+        seating_config["seating_areas"] = []
+    
+    # Format seating areas for response
+    formatted_areas = []
+    for area in seating_config.get("seating_areas", []):
+        formatted_areas.append({
+            "id": area.get("id", str(uuid.uuid4())),
+            "area_type": area.get("area_type", ""),
+            "area_name": area.get("area_name", ""),
+            "seats_per_table": area.get("seats_per_table", 0),
+            "number_of_tables": area.get("number_of_tables", 0),
+            "area_capacity": area.get("area_capacity", 0)
+        })
+    
     return {
         "restaurant_id": str(restaurant["_id"]),
-        "restaurant_name": restaurant.get("restaurant_name"),
-        "seating_config": seating_config
+        "restaurant_name": restaurant.get("restaurant_name", ""),
+        "total_capacity": seating_config.get("total_capacity", 0),
+        "seating_areas": formatted_areas,
+        "advance_booking_days": seating_config.get("advance_booking_days", 7),
+        "min_party_size": seating_config.get("min_party_size", 1),
+        "max_party_size": seating_config.get("max_party_size", 10)
     }
 
 
 @router.put("/restaurant/seating-config")
 async def update_seating_config(
-    total_capacity: int,
+    payload: SeatingConfigUpdate,
     current_user: dict = Depends(get_current_restaurant)
 ):
-    """Update restaurant seating capacity"""
-    if total_capacity < 1 or total_capacity > 500:
-        raise HTTPException(status_code=400, detail="Total capacity must be between 1 and 500")
-    
+    """
+    Update restaurant seating configuration with detailed areas.
+    Automatically calculates area capacities and total capacity.
+    """
     restaurant = await db.restaurants.find_one({"email": current_user["email"]})
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restaurant not found")
     
+    # Process each seating area
+    processed_areas = []
+    total_capacity = 0
+    
+    for area in payload.seating_areas:
+        # Calculate area capacity
+        area_capacity = area.seats_per_table * area.number_of_tables
+        total_capacity += area_capacity
+        
+        # Add unique ID and calculated capacity
+        processed_area = {
+            "id": str(uuid.uuid4()),
+            "area_type": area.area_type,
+            "area_name": area.area_name,
+            "seats_per_table": area.seats_per_table,
+            "number_of_tables": area.number_of_tables,
+            "area_capacity": area_capacity
+        }
+        processed_areas.append(processed_area)
+    
+    # Validate total capacity
+    if total_capacity < 1:
+        raise HTTPException(status_code=400, detail="Total capacity must be at least 1")
+    if total_capacity > 1000:
+        raise HTTPException(status_code=400, detail="Total capacity cannot exceed 1000")
+    
+    # Get existing config to preserve other settings
+    existing_config = restaurant.get("seating_config", {})
+    
+    # Build updated seating config
+    updated_config = {
+        "total_capacity": total_capacity,
+        "seating_areas": processed_areas,
+        "advance_booking_days": existing_config.get("advance_booking_days", 7),
+        "min_party_size": existing_config.get("min_party_size", 1),
+        "max_party_size": existing_config.get("max_party_size", 10)
+    }
+    
+    # Update in database
     await db.restaurants.update_one(
         {"_id": restaurant["_id"]},
         {"$set": {
-            "seating_config.total_capacity": total_capacity,
+            "seating_config": updated_config,
             "updated_at": datetime.utcnow()
         }}
     )
     
     return {
-        "message": "Seating capacity updated successfully",
-        "total_capacity": total_capacity
+        "message": "Seating configuration updated successfully",
+        "restaurant_id": str(restaurant["_id"]),
+        "total_capacity": total_capacity,
+        "areas_count": len(processed_areas),
+        "seating_config": updated_config
+    }
+
+
+@router.delete("/restaurant/seating-config/areas/{area_id}")
+async def delete_seating_area(
+    area_id: str,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Delete a specific seating area"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    seating_config = restaurant.get("seating_config", {})
+    seating_areas = seating_config.get("seating_areas", [])
+    
+    # Find and remove the area
+    updated_areas = [area for area in seating_areas if area.get("id") != area_id]
+    
+    if len(updated_areas) == len(seating_areas):
+        raise HTTPException(status_code=404, detail="Seating area not found")
+    
+    if len(updated_areas) == 0:
+        raise HTTPException(status_code=400, detail="Cannot delete the last seating area")
+    
+    # Recalculate total capacity
+    total_capacity = sum(area["area_capacity"] for area in updated_areas)
+    
+    # Update config
+    seating_config["seating_areas"] = updated_areas
+    seating_config["total_capacity"] = total_capacity
+    
+    await db.restaurants.update_one(
+        {"_id": restaurant["_id"]},
+        {"$set": {
+            "seating_config": seating_config,
+            "updated_at": datetime.utcnow()
+        }}
+    )
+    
+    return {
+        "message": "Seating area deleted successfully",
+        "deleted_area_id": area_id,
+        "remaining_areas": len(updated_areas),
+        "new_total_capacity": total_capacity
     }
