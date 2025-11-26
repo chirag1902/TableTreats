@@ -3,11 +3,15 @@ from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, De
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from app.schemas.seating_schema import SeatingConfigUpdate, SeatingConfigResponse, SeatingAreaResponse
+from app.schemas.promo_schema import PromoCreate, PromoUpdate, PromoResponse, PromoListResponse
 import uuid
+
+
 import json
 from bson import ObjectId
 from datetime import datetime
 import io
+
 
 from app.schemas.restaurant_schema import RestaurantSignup, RestaurantLogin, RestaurantProfile
 from app.database import db
@@ -456,11 +460,8 @@ async def update_restaurant_profile(
         "restaurant_id": restaurant_id
     }
     
-# Add these imports to your restaurant_router.py
-from app.schemas.seating_schema import SeatingConfigUpdate, SeatingConfigResponse, SeatingAreaResponse
-import uuid
 
-# REPLACE your existing seating-config endpoints with these:
+
 
 @router.get("/restaurant/seating-config", response_model=SeatingConfigResponse)
 async def get_seating_config(current_user: dict = Depends(get_current_restaurant)):
@@ -615,4 +616,251 @@ async def delete_seating_area(
         "deleted_area_id": area_id,
         "remaining_areas": len(updated_areas),
         "new_total_capacity": total_capacity
+    }
+
+@router.post("/restaurant/promos", status_code=status.HTTP_201_CREATED)
+async def create_promo(
+    payload: PromoCreate,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Create a new promo/offer for the restaurant"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    # Create promo data
+    promo_data = {
+        "id": str(uuid.uuid4()),
+        "title": payload.title,
+        "description": payload.description,
+        "discount_type": payload.discount_type,
+        "discount_value": payload.discount_value,
+        "valid_days": payload.valid_days,
+        "time_start": payload.time_start,
+        "time_end": payload.time_end,
+        "start_date": payload.start_date,
+        "end_date": payload.end_date,
+        "is_active": payload.is_active,
+        "created_at": datetime.utcnow(),
+        "updated_at": None
+    }
+    
+    # Add promo to restaurant's promos array
+    await db.restaurants.update_one(
+        {"_id": restaurant["_id"]},
+        {
+            "$push": {"promos": promo_data},
+            "$set": {"updated_at": datetime.utcnow()}
+        }
+    )
+    
+    return {
+        "message": "Promo created successfully",
+        "promo_id": promo_data["id"],
+        "promo": {
+            "id": promo_data["id"],
+            "title": promo_data["title"],
+            "description": promo_data["description"],
+            "discount_type": promo_data["discount_type"],
+            "discount_value": promo_data["discount_value"],
+            "is_active": promo_data["is_active"]
+        }
+    }
+
+
+@router.get("/restaurant/promos")
+async def get_restaurant_promos(
+    active_only: bool = False,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Get all promos for the restaurant"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    # Get promos array from restaurant document
+    promos = restaurant.get("promos", [])
+    
+    # Filter by active status if requested
+    if active_only:
+        promos = [p for p in promos if p.get("is_active", True)]
+    
+    return {
+        "total": len(promos),
+        "promos": promos
+    }
+
+
+@router.get("/restaurant/promos/{promo_id}")
+async def get_promo_details(
+    promo_id: str,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Get details of a specific promo"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    # Find promo in array
+    promos = restaurant.get("promos", [])
+    promo = next((p for p in promos if p["id"] == promo_id), None)
+    
+    if not promo:
+        raise HTTPException(status_code=404, detail="Promo not found")
+    
+    return promo
+
+
+@router.put("/restaurant/promos/{promo_id}")
+async def update_promo(
+    promo_id: str,
+    payload: PromoUpdate,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Update an existing promo"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    # Find promo in array
+    promos = restaurant.get("promos", [])
+    promo_index = next((i for i, p in enumerate(promos) if p["id"] == promo_id), None)
+    
+    if promo_index is None:
+        raise HTTPException(status_code=404, detail="Promo not found")
+    
+    # Build update data (only include fields that were provided)
+    promo = promos[promo_index]
+    
+    if payload.title is not None:
+        promo["title"] = payload.title
+    if payload.description is not None:
+        promo["description"] = payload.description
+    if payload.discount_type is not None:
+        promo["discount_type"] = payload.discount_type
+    if payload.discount_value is not None:
+        promo["discount_value"] = payload.discount_value
+    if payload.valid_days is not None:
+        promo["valid_days"] = payload.valid_days
+    if payload.time_start is not None:
+        promo["time_start"] = payload.time_start
+    if payload.time_end is not None:
+        promo["time_end"] = payload.time_end
+    if payload.start_date is not None:
+        promo["start_date"] = payload.start_date
+    if payload.end_date is not None:
+        promo["end_date"] = payload.end_date
+    if payload.is_active is not None:
+        promo["is_active"] = payload.is_active
+    
+    promo["updated_at"] = datetime.utcnow()
+    
+    # Update the entire promos array
+    promos[promo_index] = promo
+    
+    await db.restaurants.update_one(
+        {"_id": restaurant["_id"]},
+        {
+            "$set": {
+                "promos": promos,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    return {
+        "message": "Promo updated successfully",
+        "promo_id": promo_id
+    }
+
+
+@router.delete("/restaurant/promos/{promo_id}")
+async def delete_promo(
+    promo_id: str,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Delete a promo"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    # Remove promo from array using $pull
+    result = await db.restaurants.update_one(
+        {"_id": restaurant["_id"]},
+        {
+            "$pull": {"promos": {"id": promo_id}},
+            "$set": {"updated_at": datetime.utcnow()}
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Promo not found")
+    
+    return {
+        "message": "Promo deleted successfully",
+        "promo_id": promo_id
+    }
+
+
+@router.patch("/restaurant/promos/{promo_id}/toggle")
+async def toggle_promo_status(
+    promo_id: str,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Toggle promo active/inactive status"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    # Find promo in array
+    promos = restaurant.get("promos", [])
+    promo_index = next((i for i, p in enumerate(promos) if p["id"] == promo_id), None)
+    
+    if promo_index is None:
+        raise HTTPException(status_code=404, detail="Promo not found")
+    
+    # Toggle status
+    promos[promo_index]["is_active"] = not promos[promo_index]["is_active"]
+    promos[promo_index]["updated_at"] = datetime.utcnow()
+    new_status = promos[promo_index]["is_active"]
+    
+    # Update the entire promos array
+    await db.restaurants.update_one(
+        {"_id": restaurant["_id"]},
+        {
+            "$set": {
+                "promos": promos,
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    return {
+        "message": f"Promo {'activated' if new_status else 'deactivated'} successfully",
+        "promo_id": promo_id,
+        "is_active": new_status
+    }
+
+
+# ==================== PUBLIC ENDPOINT FOR CUSTOMERS ====================
+
+@router.get("/restaurants/{restaurant_id}/promos")
+async def get_public_restaurant_promos(restaurant_id: str):
+    """Get active promos for a restaurant (public endpoint for customers)"""
+    try:
+        restaurant = await db.restaurants.find_one({"_id": ObjectId(restaurant_id)})
+    except:
+        raise HTTPException(status_code=400, detail="Invalid restaurant ID")
+    
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    # Get only active promos from the promos array
+    all_promos = restaurant.get("promos", [])
+    active_promos = [p for p in all_promos if p.get("is_active", True)]
+    
+    return {
+        "restaurant_name": restaurant.get("restaurant_name"),
+        "total": len(active_promos),
+        "promos": active_promos
     }

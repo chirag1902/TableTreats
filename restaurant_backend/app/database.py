@@ -2,6 +2,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from app.config import MONGO_URI, DATABASE_NAME
 
+
 # MongoDB client
 client = AsyncIOMotorClient(MONGO_URI)
 db = client['restaurant_db']
