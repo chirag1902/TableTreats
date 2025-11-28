@@ -248,3 +248,149 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_restauran
         "total_customers": unique_customers,
         "average_party_size": round(week_guests / len(week_reservations), 1) if week_reservations else 0
     }
+    
+@router.patch("/restaurant/reservations/{reservation_id}/check-in")
+async def check_in_customer(
+    reservation_id: str,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Check in a customer when they arrive at the restaurant"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    restaurant_id = str(restaurant["_id"])
+    
+    try:
+        reservation = await db.reservations.find_one({"_id": ObjectId(reservation_id)})
+    except:
+        raise HTTPException(status_code=400, detail="Invalid reservation ID")
+    
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    
+    if reservation["restaurant_id"] != restaurant_id:
+        raise HTTPException(status_code=403, detail="Not authorized to check in this reservation")
+    
+    if reservation.get("checked_in", False):
+        raise HTTPException(status_code=400, detail="Customer already checked in")
+    
+    if reservation["status"] != "confirmed":
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot check in reservation with status: {reservation['status']}"
+        )
+    
+    await db.reservations.update_one(
+        {"_id": ObjectId(reservation_id)},
+        {"$set": {
+            "checked_in": True,
+            "checked_in_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }}
+    )
+    
+    return {
+        "message": "Customer checked in successfully",
+        "reservation_id": reservation_id,
+        "customer_name": reservation["customer_name"],
+        "checked_in_at": datetime.utcnow().isoformat(),
+        "time_slot": reservation["time_slot"],
+        "number_of_guests": reservation["number_of_guests"]
+    }
+
+
+@router.patch("/restaurant/reservations/{reservation_id}/undo-check-in")
+async def undo_check_in(
+    reservation_id: str,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Undo check-in (in case of mistake)"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    restaurant_id = str(restaurant["_id"])
+    
+    try:
+        reservation = await db.reservations.find_one({"_id": ObjectId(reservation_id)})
+    except:
+        raise HTTPException(status_code=400, detail="Invalid reservation ID")
+    
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    
+    if reservation["restaurant_id"] != restaurant_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    if not reservation.get("checked_in", False):
+        raise HTTPException(status_code=400, detail="Customer was not checked in")
+    
+    await db.reservations.update_one(
+        {"_id": ObjectId(reservation_id)},
+        {
+            "$set": {
+                "checked_in": False,
+                "updated_at": datetime.utcnow()
+            },
+            "$unset": {
+                "checked_in_at": ""
+            }
+        }
+    )
+    
+    return {
+        "message": "Check-in undone successfully",
+        "reservation_id": reservation_id,
+        "customer_name": reservation["customer_name"]
+    }
+
+
+@router.get("/restaurant/reservations/today/check-in-status")
+async def get_todays_checkin_status(current_user: dict = Depends(get_current_restaurant)):
+    """Get today's reservations with check-in status"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    restaurant_id = str(restaurant["_id"])
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    reservations = await db.reservations.find({
+        "restaurant_id": restaurant_id,
+        "date": today,
+        "status": "confirmed"
+    }).sort("time_slot", 1).to_list(length=None)
+    
+    total_reservations = len(reservations)
+    checked_in_count = sum(1 for r in reservations if r.get("checked_in", False))
+    not_checked_in_count = total_reservations - checked_in_count
+    total_guests_expected = sum(r["number_of_guests"] for r in reservations)
+    total_guests_checked_in = sum(
+        r["number_of_guests"] for r in reservations if r.get("checked_in", False)
+    )
+    
+    formatted_reservations = []
+    for res in reservations:
+        formatted_reservations.append({
+            "id": str(res["_id"]),
+            "customer_name": res["customer_name"],
+            "customer_phone": res["customer_phone"],
+            "time_slot": res["time_slot"],
+            "number_of_guests": res["number_of_guests"],
+            "checked_in": res.get("checked_in", False),
+            "checked_in_at": res.get("checked_in_at"),
+            "special_requests": res.get("special_requests")
+        })
+    
+    return {
+        "date": today,
+        "summary": {
+            "total_reservations": total_reservations,
+            "checked_in": checked_in_count,
+            "not_checked_in": not_checked_in_count,
+            "total_guests_expected": total_guests_expected,
+            "total_guests_checked_in": total_guests_checked_in
+        },
+        "reservations": formatted_reservations
+    }
