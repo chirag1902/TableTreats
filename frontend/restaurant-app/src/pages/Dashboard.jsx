@@ -153,7 +153,6 @@ export default function RestaurantDashboard() {
     {
       title: "This Week's Revenue",
       value: "$3,450",
-      change: "+15%",
       icon: DollarSign,
       gradient: "from-green-500 to-emerald-500",
       bgGradient: "from-green-50 to-emerald-50"
@@ -161,7 +160,6 @@ export default function RestaurantDashboard() {
     {
       title: "Total Customers",
       value: "1,234",
-      change: "+23%",
       icon: Users,
       gradient: "from-purple-500 to-pink-500",
       bgGradient: "from-purple-50 to-pink-50"
@@ -169,7 +167,6 @@ export default function RestaurantDashboard() {
     {
       title: "Average Rating",
       value: restaurantData?.rating?.toString() || "4.8",
-      change: "+0.2",
       icon: Star,
       gradient: "from-yellow-500 to-orange-500",
       bgGradient: "from-yellow-50 to-orange-50"
