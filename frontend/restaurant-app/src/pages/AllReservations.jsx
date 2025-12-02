@@ -32,6 +32,19 @@ export default function AllReservations() {
       if (response.ok) {
         const data = await response.json();
         const reservationsList = Array.isArray(data) ? data : data.reservations || [];
+        console.log('Fetched reservations:', reservationsList);
+        console.log('First reservation complete:', JSON.stringify(reservationsList[0], null, 2));
+        // Check which reservations are marked as checked in
+        reservationsList.forEach((res, idx) => {
+          if (res.checked_in || res.checkedIn) {
+            console.log(`Reservation ${idx} (${res.customer_name}) is checked in:`, {
+              checked_in: res.checked_in,
+              checkedIn: res.checkedIn,
+              checked_in_at: res.checked_in_at,
+              checkedInAt: res.checkedInAt
+            });
+          }
+        });
         setReservations(reservationsList);
       } else if (response.status === 401) {
         window.location.href = '/signin';
@@ -45,17 +58,27 @@ export default function AllReservations() {
   };
 
   const handleCheckIn = async (reservationId) => {
+    console.log('Check-in button clicked for reservation:', reservationId);
+    
+    if (!reservationId) {
+      setError('Invalid reservation ID');
+      return;
+    }
+
     setError('');
     setSuccess('');
 
     try {
       setCheckingInId(reservationId);
       const token = localStorage.getItem('restaurant_token');
+      
+      console.log('Token:', token ? 'Present' : 'Missing');
+      console.log('Making request to:', `http://localhost:8001/api/restaurant/reservations/${reservationId}/check-in`);
 
       const response = await fetch(
         `http://localhost:8001/api/restaurant/reservations/${reservationId}/check-in`,
         {
-          method: 'PUT',
+          method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -66,20 +89,29 @@ export default function AllReservations() {
           })
         }
       );
-
+      
+      console.log('Response status:', response.status);
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+      
       if (response.ok) {
         setSuccess('Customer checked in successfully!');
         await fetchAllReservations();
         setTimeout(() => setSuccess(''), 3000);
       } else if (response.status === 401) {
         window.location.href = '/signin';
+      } else if (response.status === 400 && responseData.detail?.includes('already checked in')) {
+        // Don't show error, just refresh to show the checked-in status
+        await fetchAllReservations();
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to check in customer');
+        console.error('Check-in error:', responseData);
+        setError(responseData.message || responseData.detail || 'Failed to check in customer');
+        setTimeout(() => setError(''), 4000);
       }
     } catch (err) {
       console.error('Error checking in:', err);
-      setError('An error occurred while checking in');
+      console.error('Error details:', err.message, err.stack);
+      setError(`An error occurred while checking in: ${err.message}`);
     } finally {
       setCheckingInId(null);
     }
@@ -205,11 +237,15 @@ export default function AllReservations() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredReservations.map((reservation) => (
+            {filteredReservations.map((reservation) => {
+              const isCheckedIn = reservation.checked_in || reservation.checkedIn;
+              const reservationId = reservation.id || reservation._id;
+              
+              return (
               <div
-                key={reservation._id}
+                key={reservationId}
                 className={`bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all ${
-                  reservation.checked_in ? 'border-l-4 border-green-500' : ''
+                  isCheckedIn ? 'border-l-4 border-green-500' : ''
                 }`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -223,7 +259,7 @@ export default function AllReservations() {
                         <h3 className="text-lg font-bold text-gray-900">
                           {reservation.customer_name}
                         </h3>
-                        {reservation.checked_in && (
+                        {isCheckedIn && (
                           <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
                             Checked In
@@ -254,10 +290,10 @@ export default function AllReservations() {
                         </div>
                       )}
 
-                      {reservation.checked_in && reservation.checked_in_at && (
+                      {isCheckedIn && (reservation.checked_in_at || reservation.checkedInAt) && (
                         <div className="mt-2 p-3 bg-green-50 rounded-lg">
                           <p className="text-sm text-green-700">
-                            <span className="font-semibold">Checked in at:</span> {new Date(reservation.checked_in_at).toLocaleTimeString()}
+                            <span className="font-semibold">Checked in at:</span> {new Date(reservation.checked_in_at || reservation.checkedInAt).toLocaleTimeString()}
                           </p>
                         </div>
                       )}
@@ -291,21 +327,22 @@ export default function AllReservations() {
                         {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
                       </span>
 
-                      {!reservation.checked_in && reservation.status === 'confirmed' && (
+                      {!isCheckedIn && reservation.status === 'confirmed' && (
                         <button
-                          onClick={() => handleCheckIn(reservation._id)}
-                          disabled={checkingInId === reservation._id}
+                          onClick={() => handleCheckIn(reservationId)}
+                          disabled={checkingInId === reservationId}
                           className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full font-semibold text-sm flex items-center gap-2 hover:shadow-lg transition-all disabled:opacity-50"
                         >
                           <LogIn className="w-4 h-4" />
-                          {checkingInId === reservation._id ? 'Checking in...' : 'Check In'}
+                          {checkingInId === reservationId ? 'Checking in...' : 'Check In'}
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </main>
