@@ -5,6 +5,7 @@ import RestaurantEditForm from "./pages/RestaurantEditForm";
 import SeatingConfiguration from './pages/SeatingConfiguration';
 import AllReservations from './pages/AllReservations';
 import CreateDealPage from './pages/CreateDealPage';
+import BillManagement from "./pages/BillManagement";
 import SignIn from "./pages/SignIn";
 import Landing from "./pages/Landing";
 import SignUp from "./pages/Signup";
@@ -21,6 +22,7 @@ function App() {
         <Route path="/edit-profile" element={<RestaurantEditForm />} />
         <Route path="/seating-configuration" element={<SeatingConfiguration />} />
         <Route path="/reservations" element={<AllReservations />} />
+        <Route path="/bills" element={<BillManagement />} />
         <Route path="/deals" element={<CreateDealPage />} />
         {/* Add other routes as needed */}
       </Routes>

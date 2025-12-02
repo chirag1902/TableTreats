@@ -150,6 +150,7 @@ export default function RestaurantDashboard() {
       gradient: "from-blue-500 to-cyan-500",
       bgGradient: "from-blue-50 to-cyan-50"
     },
+
     {
       title: "This Week's Revenue",
       value: "$3,450",
@@ -189,11 +190,11 @@ export default function RestaurantDashboard() {
       action: () => navigate('/seating-configuration')
     },
     {
-      title: "Menu Management",
-      description: "Update menu items and prices",
-      icon: Package,
-      gradient: "from-green-500 to-teal-500",
-      action: () => navigate('/menu')
+      title: "Bill Management",
+      description: "Create and manage customer bills",
+      icon: DollarSign,
+      gradient: "from-green-500 to-emerald-500",
+      action: () => navigate('/bills')
     },
     {
       title: "Create Deal",

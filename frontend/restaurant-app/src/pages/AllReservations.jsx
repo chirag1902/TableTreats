@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Calendar, Clock, User, Users, 
-  CheckCircle, XCircle, Phone, Mail, MapPin
+import {
+  ArrowLeft, Calendar, Clock, User, Users,
+  CheckCircle, XCircle, Phone, Mail, LogIn,
+  AlertCircle
 } from 'lucide-react';
-import axios from 'axios';
 
 export default function AllReservations() {
-  const navigate = useNavigate();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [filterStatus, setFilterStatus] = useState('confirmed');
+  const [checkingInId, setCheckingInId] = useState(null);
 
   useEffect(() => {
     fetchAllReservations();
@@ -18,27 +19,69 @@ export default function AllReservations() {
 
   const fetchAllReservations = async () => {
     const token = localStorage.getItem('restaurant_token');
-    
+
     try {
-      const { data } = await axios.get(
-        'http://localhost:8001/api/restaurant/reservations',
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+      const response = await fetch('http://localhost:8001/api/restaurant/reservations', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      );
-      
-      console.log('All Reservations:', data);
-      
-      // Handle different response structures
-      const reservationsList = Array.isArray(data) ? data : data.reservations || [];
-      setReservations(reservationsList);
-      
-    } catch (error) {
-      console.error('Failed to fetch reservations:', error);
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const reservationsList = Array.isArray(data) ? data : data.reservations || [];
+        setReservations(reservationsList);
+      } else if (response.status === 401) {
+        window.location.href = '/signin';
+      }
+    } catch (err) {
+      console.error('Failed to fetch reservations:', err);
+      setError('Failed to load reservations');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCheckIn = async (reservationId) => {
+    setError('');
+    setSuccess('');
+
+    try {
+      setCheckingInId(reservationId);
+      const token = localStorage.getItem('restaurant_token');
+
+      const response = await fetch(
+        `http://localhost:8001/api/restaurant/reservations/${reservationId}/check-in`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            checked_in: true,
+            checked_in_at: new Date().toISOString()
+          })
+        }
+      );
+
+      if (response.ok) {
+        setSuccess('Customer checked in successfully!');
+        await fetchAllReservations();
+        setTimeout(() => setSuccess(''), 3000);
+      } else if (response.status === 401) {
+        window.location.href = '/signin';
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Failed to check in customer');
+      }
+    } catch (err) {
+      console.error('Error checking in:', err);
+      setError('An error occurred while checking in');
+    } finally {
+      setCheckingInId(null);
     }
   };
 
@@ -61,12 +104,21 @@ export default function AllReservations() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
   };
 
   if (loading) {
@@ -82,13 +134,12 @@ export default function AllReservations() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50">
-      {/* Header */}
       <header className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => window.history.back()}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-6 h-6 text-gray-700" />
@@ -103,7 +154,20 @@ export default function AllReservations() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Filters */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <p className="text-green-700">{success}</p>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex justify-center gap-3">
             <button
@@ -129,7 +193,6 @@ export default function AllReservations() {
           </div>
         </div>
 
-        {/* Reservations List */}
         {filteredReservations.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -145,20 +208,29 @@ export default function AllReservations() {
             {filteredReservations.map((reservation) => (
               <div
                 key={reservation._id}
-                className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all"
+                className={`bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all ${
+                  reservation.checked_in ? 'border-l-4 border-green-500' : ''
+                }`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  {/* Customer Info */}
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
                       {reservation.customer_name.charAt(0).toUpperCase()}
                     </div>
-                    
+
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">
-                        {reservation.customer_name}
-                      </h3>
-                      
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {reservation.customer_name}
+                        </h3>
+                        {reservation.checked_in && (
+                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Checked In
+                          </span>
+                        )}
+                      </div>
+
                       <div className="space-y-1 text-sm text-gray-600">
                         {reservation.customer_email && (
                           <div className="flex items-center gap-2">
@@ -181,10 +253,17 @@ export default function AllReservations() {
                           </p>
                         </div>
                       )}
+
+                      {reservation.checked_in && reservation.checked_in_at && (
+                        <div className="mt-2 p-3 bg-green-50 rounded-lg">
+                          <p className="text-sm text-green-700">
+                            <span className="font-semibold">Checked in at:</span> {new Date(reservation.checked_in_at).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Reservation Details */}
                   <div className="flex flex-col md:items-end gap-3">
                     <div className="flex items-center gap-4">
                       <div className="text-right">
@@ -194,7 +273,7 @@ export default function AllReservations() {
                         </div>
                         <div className="flex items-center gap-2 text-gray-700">
                           <Clock className="w-4 h-4" />
-                          <span className="font-semibold">{reservation.time_slot}</span>
+                          <span className="font-semibold">{formatTime(reservation.time_slot)}</span>
                         </div>
                       </div>
 
@@ -205,11 +284,24 @@ export default function AllReservations() {
                       </div>
                     </div>
 
-                    <span className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 ${getStatusColor(reservation.status)}`}>
-                      {reservation.status === 'confirmed' && <CheckCircle className="w-4 h-4" />}
-                      {reservation.status === 'cancelled' && <XCircle className="w-4 h-4" />}
-                      {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 ${getStatusColor(reservation.status)}`}>
+                        {reservation.status === 'confirmed' && <CheckCircle className="w-4 h-4" />}
+                        {reservation.status === 'cancelled' && <XCircle className="w-4 h-4" />}
+                        {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                      </span>
+
+                      {!reservation.checked_in && reservation.status === 'confirmed' && (
+                        <button
+                          onClick={() => handleCheckIn(reservation._id)}
+                          disabled={checkingInId === reservation._id}
+                          className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full font-semibold text-sm flex items-center gap-2 hover:shadow-lg transition-all disabled:opacity-50"
+                        >
+                          <LogIn className="w-4 h-4" />
+                          {checkingInId === reservation._id ? 'Checking in...' : 'Check In'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

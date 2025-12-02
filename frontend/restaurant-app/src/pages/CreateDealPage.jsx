@@ -1,7 +1,39 @@
-import React, { useState, useEffect } from 'react';
+  const deleteDeal = async (dealId) => {
+    if (!window.confirm('Are you sure you want to delete this deal?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('restaurant_token');
+
+      const response = await fetch(`http://localhost:8001/api/restaurant/promos/${dealId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setSuccess('Deal deleted successfully!');
+        await fetchDeals();
+        setTimeout(() => setSuccess(''), 3000);
+      } else if (response.status === 401) {
+        window.location.href = '/signin';
+      } else {
+        setError('Failed to delete deal');
+      }
+    } catch (err) {
+      console.error('Error deleting deal:', err);
+      setError('An error occurred while deleting the deal');
+    } finally {
+      setLoading(false);
+    }
+  };import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, TrendingUp, Plus, X, AlertCircle, CheckCircle,
-  DollarSign, Percent, Gift, Calendar, Clock
+  DollarSign, Percent, Gift, Calendar, Clock, Edit, Trash2
 } from 'lucide-react';
 
 export default function CreateDealPage() {
@@ -10,6 +42,7 @@ export default function CreateDealPage() {
   const [success, setSuccess] = useState('');
   const [deals, setDeals] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingDealId, setEditingDealId] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -131,8 +164,14 @@ export default function CreateDealPage() {
         is_active: formData.is_active
       };
 
-      const response = await fetch('http://localhost:8001/api/restaurant/promos', {
-        method: 'POST',
+      const url = editingDealId 
+        ? `http://localhost:8001/api/restaurant/promos/${editingDealId}`
+        : 'http://localhost:8001/api/restaurant/promos';
+      
+      const method = editingDealId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -141,7 +180,7 @@ export default function CreateDealPage() {
       });
 
       if (response.ok) {
-        setSuccess('Deal created successfully!');
+        setSuccess(editingDealId ? 'Deal updated successfully!' : 'Deal created successfully!');
         
         setFormData({
           title: '',
@@ -156,6 +195,7 @@ export default function CreateDealPage() {
           is_active: true
         });
         
+        setEditingDealId(null);
         setShowForm(false);
         await fetchDeals();
         
@@ -164,11 +204,11 @@ export default function CreateDealPage() {
         window.location.href = '/signin';
       } else {
         const errorData = await response.json();
-        setError(errorData.message || 'Failed to create deal');
+        setError(errorData.message || 'Failed to save deal');
       }
     } catch (err) {
-      console.error('Error creating deal:', err);
-      setError('An error occurred while creating the deal');
+      console.error('Error saving deal:', err);
+      setError('An error occurred while saving the deal');
     } finally {
       setLoading(false);
     }
@@ -239,6 +279,23 @@ export default function CreateDealPage() {
     });
   };
 
+  const startEditDeal = (deal) => {
+    setEditingDealId(deal.id);
+    setFormData({
+      title: deal.title,
+      description: deal.description,
+      discount_type: deal.discount_type,
+      discount_value: deal.discount_value || '',
+      valid_days: deal.valid_days || [0],
+      time_start: deal.time_start || '00:00',
+      time_end: deal.time_end || '23:59',
+      start_date: deal.start_date || '',
+      end_date: deal.end_date || '',
+      is_active: deal.is_active
+    });
+    setShowForm(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50">
       <header className="bg-white shadow-md sticky top-0 z-50">
@@ -277,7 +334,22 @@ export default function CreateDealPage() {
 
         <div className="mb-8">
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              setEditingDealId(null);
+              setFormData({
+                title: '',
+                description: '',
+                discount_type: 'percentage',
+                discount_value: '',
+                valid_days: [0],
+                time_start: '00:00',
+                time_end: '23:59',
+                start_date: '',
+                end_date: '',
+                is_active: true
+              });
+              setShowForm(!showForm);
+            }}
             className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
               showForm
                 ? 'bg-gray-200 text-gray-800'
@@ -292,9 +364,14 @@ export default function CreateDealPage() {
         {showForm && (
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Create New Deal</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {editingDealId ? 'Edit Deal' : 'Create New Deal'}
+              </h2>
               <button
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingDealId(null);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 <X className="w-6 h-6 text-gray-600" />
@@ -486,10 +563,13 @@ export default function CreateDealPage() {
                   disabled={loading}
                   className="flex-1 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
                 >
-                  {loading ? 'Creating Deal...' : 'Create Deal'}
+                  {loading ? 'Saving...' : editingDealId ? 'Update Deal' : 'Create Deal'}
                 </button>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingDealId(null);
+                  }}
                   className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-lg hover:bg-gray-200 transition-all"
                 >
                   Cancel
@@ -550,17 +630,23 @@ export default function CreateDealPage() {
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => toggleDealStatus(deal.id, deal.is_active)}
-                      disabled={loading}
-                      className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                        deal.is_active
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
-                      } disabled:opacity-50`}
-                    >
-                      {deal.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => startEditDeal(deal)}
+                        className="px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition-all flex items-center gap-1"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteDeal(deal.id)}
+                        disabled={loading}
+                        className="px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg font-semibold text-sm transition-all flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
