@@ -888,8 +888,3 @@ async def get_public_restaurant_promos(restaurant_id: str):
         "total": len(active_promos),
         "promos": active_promos
     }
-    
-@router.get("/restaurant/test-endpoint")
-async def test_endpoint(current_user: dict = Depends(get_current_restaurant)):
-    """Test endpoint"""
-    return {"message": "Test endpoint works!"}
