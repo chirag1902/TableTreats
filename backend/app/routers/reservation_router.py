@@ -46,11 +46,12 @@ async def get_restaurant_hours(restaurant_id: str, date: str):
 
 @router.post("/reservations/check-availability", response_model=AvailabilityResponse)
 async def check_availability(data: AvailabilityCheck):
-    """Check availability for a specific time slot"""
+    """Check availability for a specific time slot with seating areas"""
     availability = await reservation_service.check_availability(
         data.restaurant_id,
         data.date,
-        data.time_slot
+        data.time_slot,
+        data.number_of_guests
     )
     
     if "error" in availability:
@@ -79,7 +80,7 @@ async def create_reservation(
     reservation: ReservationCreate,
     current_user: dict = Depends(get_current_customer)
 ):
-    """Create a new reservation (Protected - Customer only)"""
+    """Create a new reservation with seating area (Protected - Customer only)"""
     
     new_reservation = await reservation_service.create_reservation(
         reservation.dict(),
@@ -89,7 +90,7 @@ async def create_reservation(
     if not new_reservation:
         raise HTTPException(
             status_code=400,
-            detail="Unable to create reservation. Restaurant may be closed, slot may be full, or time is outside operating hours."
+            detail="Unable to create reservation. Restaurant may be closed, slot may be full, seating area unavailable, or time is outside operating hours."
         )
     
     return new_reservation
@@ -102,7 +103,6 @@ async def get_my_reservations(current_user: dict = Depends(get_current_customer)
     )
     return reservations
 
-# NEW ROUTE - Get reservations by customer email (for profile page)
 @router.get("/reservations/customer/{customer_email}", response_model=List[ReservationOut])
 async def get_customer_reservations_by_email(
     customer_email: str,
@@ -138,16 +138,16 @@ async def cancel_reservation(
     reservation_id: str,
     current_user: dict = Depends(get_current_customer)
 ):
-    """Cancel a reservation"""
-    success = await reservation_service.cancel_reservation(
+    """Cancel a reservation (prevents cancellation if time has passed)"""
+    result = await reservation_service.cancel_reservation(
         reservation_id,
         current_user["email"]
     )
     
-    if not success:
+    if not result["success"]:
         raise HTTPException(
-            status_code=404,
-            detail="Reservation not found or already cancelled"
+            status_code=400,
+            detail=result["error"]
         )
     
     return {"message": "Reservation cancelled successfully"}

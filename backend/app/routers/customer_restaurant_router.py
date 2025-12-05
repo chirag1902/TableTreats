@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
-from services import customer_restaurant_service
-from typing import Optional
+from services import customer_restaurant_service, deal_service
+from typing import Optional, List
 from bson import ObjectId
+from schemas.reservation_schema import DealOut
 
 # Import your GridFS instance
-from database import fs  # Adjust this import based on where your GridFS is defined
+from database import fs
 
 router = APIRouter()
 
@@ -47,13 +48,28 @@ async def get_restaurant_details(restaurant_id: str):
         raise HTTPException(status_code=404, detail="Restaurant not found")
     return restaurant
 
+@router.get("/customers/restaurants/{restaurant_id}/deals", response_model=List[DealOut])
+async def get_restaurant_deals(restaurant_id: str):
+    """Get all active deals for a restaurant"""
+    deals = await deal_service.get_restaurant_deals(restaurant_id)
+    return deals
+
+@router.get("/customers/restaurants/{restaurant_id}/deals/applicable")
+async def get_applicable_deals(
+    restaurant_id: str,
+    date: str,
+    time_slot: str
+):
+    """Get deals applicable for a specific reservation date and time"""
+    deals = await deal_service.get_applicable_deals(restaurant_id, date, time_slot)
+    return deals
+
 @router.get("/restaurant/image/{file_id}")
 async def get_restaurant_image(file_id: str):
     """
     Retrieve restaurant image from GridFS
     """
     try:
-        # Download from GridFS
         grid_out = await fs.open_download_stream(ObjectId(file_id))
         content = await grid_out.read()
         
