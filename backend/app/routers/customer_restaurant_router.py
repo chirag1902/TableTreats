@@ -1,11 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
-from services import customer_restaurant_service, deal_service
-from typing import Optional, List
+from services import customer_restaurant_service
+from typing import Optional
 from bson import ObjectId
-from schemas.reservation_schema import DealOut
-
-# Import your GridFS instance
 from database import fs
 
 router = APIRouter()
@@ -20,6 +17,104 @@ async def get_all_restaurants(
     """Get list of all restaurants (with optional filters)"""
     restaurants = await customer_restaurant_service.get_restaurants(
         city=city,
+        cuisine=cuisine,
+        skip=skip,
+        limit=limit
+    )
+    return restaurants
+
+@router.get("/customers/restaurants/premium")
+async def get_premium_restaurants(
+    cuisine: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 20
+):
+    """Get premium/featured restaurants"""
+    restaurants = await customer_restaurant_service.get_premium_restaurants(
+        cuisine=cuisine,
+        skip=skip,
+        limit=limit
+    )
+    return restaurants
+
+@router.get("/customers/restaurants/todays-deals")
+async def get_todays_deals(
+    cuisine: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50
+):
+    """Get restaurants with active deals today"""
+    restaurants = await customer_restaurant_service.get_todays_deals(
+        cuisine=cuisine,
+        skip=skip,
+        limit=limit
+    )
+    return restaurants
+
+@router.get("/customers/restaurants/top-rated")
+async def get_top_rated(
+    cuisine: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 20
+):
+    """Get top rated restaurants"""
+    restaurants = await customer_restaurant_service.get_top_rated(
+        cuisine=cuisine,
+        skip=skip,
+        limit=limit
+    )
+    return restaurants
+
+@router.get("/customers/restaurants/open-now")
+async def get_open_now(
+    cuisine: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 20
+):
+    """Get restaurants that are currently open"""
+    restaurants = await customer_restaurant_service.get_open_now(
+        cuisine=cuisine,
+        skip=skip,
+        limit=limit
+    )
+    return restaurants
+
+@router.get("/customers/restaurants/new-arrivals")
+async def get_new_arrivals(
+    cuisine: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 20
+):
+    """Get newly onboarded restaurants"""
+    restaurants = await customer_restaurant_service.get_new_arrivals(
+        cuisine=cuisine,
+        skip=skip,
+        limit=limit
+    )
+    return restaurants
+
+@router.get("/customers/restaurants/by-location")
+async def get_restaurants_by_location(
+    cuisine: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50
+):
+    """Get restaurants for grouping by location"""
+    restaurants = await customer_restaurant_service.get_restaurants_by_location(
+        cuisine=cuisine,
+        skip=skip,
+        limit=limit
+    )
+    return restaurants
+
+@router.get("/customers/restaurants/by-promo")
+async def get_restaurants_by_promo(
+    cuisine: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50
+):
+    """Get restaurants with active promos for grouping"""
+    restaurants = await customer_restaurant_service.get_restaurants_by_promo(
         cuisine=cuisine,
         skip=skip,
         limit=limit

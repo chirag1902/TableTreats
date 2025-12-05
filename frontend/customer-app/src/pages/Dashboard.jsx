@@ -1,7 +1,15 @@
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, MapPin, User, LogOut, Star } from "lucide-react";
+import {
+  Search,
+  MapPin,
+  User,
+  LogOut,
+  Star,
+  Navigation,
+  Edit2,
+} from "lucide-react";
 import { logout } from "../services/authService";
 import {
   getAllRestaurants,
@@ -12,12 +20,15 @@ import logoImage from "../assets/logo.png";
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedFilter, setSelectedFilter] = useState("All Restaurants");
   const [userName, setUserName] = useState("Guest");
-  const [userLocation, setUserLocation] = useState("New Brunswick, NJ");
-  const [restaurants, setRestaurants] = useState([]);
+  const [userLocation, setUserLocation] = useState("Detecting location...");
+  const [userCoordinates, setUserCoordinates] = useState(null);
+  const [groupedRestaurants, setGroupedRestaurants] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [manualLocation, setManualLocation] = useState("");
   const navigate = useNavigate();
 
   const categories = [
@@ -31,15 +42,12 @@ export default function Dashboard() {
     { name: "Desserts", emoji: "🍰", gradient: "from-pink-400 to-purple-400" },
   ];
 
-  const filters = [
-    { name: "All Restaurants", icon: "🎯" },
-    { name: "Premium Dining", icon: "💎" },
-    { name: "Today's Deals", icon: "🎊" },
-    { name: "Top Rated", icon: "⭐" },
-    { name: "Open Now", icon: "🕐" },
-    { name: "New Arrivals", icon: "🆕" },
-  ];
+  // Auto-detect location on mount
+  useEffect(() => {
+    detectLocation();
+  }, []);
 
+  // Initialize user data
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userDataStr = localStorage.getItem("userData");
@@ -52,7 +60,15 @@ export default function Dashboard() {
     try {
       const userData = JSON.parse(userDataStr);
       setUserName(userData.name || "Guest");
-      setUserLocation(userData.location || "New Brunswick, NJ");
+
+      // Update location if we detected it
+      if (
+        userLocation !== "Detecting location..." &&
+        userLocation !== "Location unavailable"
+      ) {
+        userData.location = userLocation;
+        localStorage.setItem("userData", JSON.stringify(userData));
+      }
     } catch (error) {
       console.error("Error parsing user data:", error);
       navigate("/login");
@@ -66,13 +82,21 @@ export default function Dashboard() {
 
     window.addEventListener("auth:logout", handleAuthLogout);
     return () => window.removeEventListener("auth:logout", handleAuthLogout);
-  }, [navigate]);
+  }, [navigate, userLocation]);
 
+  // Fetch restaurants when location or category changes
   useEffect(() => {
-    fetchRestaurants();
+    if (
+      userLocation &&
+      userLocation !== "Detecting location..." &&
+      userLocation !== "Location unavailable"
+    ) {
+      fetchRestaurants();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, selectedFilter, userLocation]);
+  }, [selectedCategory, userLocation]);
 
+  // Search debounce
   useEffect(() => {
     const delaySearch = setTimeout(() => {
       if (searchQuery.trim()) {
@@ -86,13 +110,85 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      setUserLocation("New Brunswick, NJ");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserCoordinates({ latitude, longitude });
+
+        try {
+          // Use reverse geocoding to get city name
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await response.json();
+
+          const city =
+            data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            "Unknown";
+          const state = data.address.state || "";
+          const locationString = state ? `${city}, ${state}` : city;
+
+          setUserLocation(locationString);
+          setLocationError(null);
+
+          // Update user data in localStorage
+          const userDataStr = localStorage.getItem("userData");
+          if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            userData.location = locationString;
+            userData.coordinates = { latitude, longitude };
+            localStorage.setItem("userData", JSON.stringify(userData));
+          }
+        } catch (error) {
+          console.error("Error getting location name:", error);
+          setUserLocation("New Brunswick, NJ");
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        setLocationError("Unable to detect location");
+        setUserLocation("New Brunswick, NJ");
+      }
+    );
+  };
+
+  const handleManualLocationChange = () => {
+    if (manualLocation.trim()) {
+      setUserLocation(manualLocation.trim());
+
+      // Update localStorage
+      const userDataStr = localStorage.getItem("userData");
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        userData.location = manualLocation.trim();
+        localStorage.setItem("userData", JSON.stringify(userData));
+      }
+
+      setShowLocationModal(false);
+      setManualLocation("");
+    }
+  };
+
   const fetchRestaurants = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      // Extract city from location string (e.g., "New Brunswick, NJ" -> "New Brunswick")
+      const city = userLocation.split(",")[0].trim();
+
       const params = {
-        limit: 20,
+        city: city,
+        limit: 50,
         skip: 0,
       };
 
@@ -101,13 +197,44 @@ export default function Dashboard() {
       }
 
       const data = await getAllRestaurants(params);
-      setRestaurants(data);
+
+      // Group by deals
+      groupByDeals(data);
     } catch (err) {
       setError(err.detail || "Failed to load restaurants");
       console.error("Error fetching restaurants:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const groupByDeals = (restaurantList) => {
+    const grouped = {
+      "Special Offers & Deals": [],
+      "Available Restaurants": [],
+    };
+
+    restaurantList.forEach((restaurant) => {
+      if (restaurant.activeDeals && restaurant.activeDeals.length > 0) {
+        // Add restaurant to Special Offers with all its deals
+        grouped["Special Offers & Deals"].push({
+          ...restaurant,
+          deals: restaurant.activeDeals,
+        });
+      } else {
+        grouped["Available Restaurants"].push(restaurant);
+      }
+    });
+
+    // Remove empty groups
+    if (grouped["Special Offers & Deals"].length === 0) {
+      delete grouped["Special Offers & Deals"];
+    }
+    if (grouped["Available Restaurants"].length === 0) {
+      delete grouped["Available Restaurants"];
+    }
+
+    setGroupedRestaurants(grouped);
   };
 
   const handleSearch = async () => {
@@ -120,7 +247,15 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
       const data = await searchRestaurants(searchQuery);
-      setRestaurants(data);
+
+      // Filter by user location
+      const city = userLocation.split(",")[0].trim().toLowerCase();
+      const filteredData = data.filter(
+        (restaurant) =>
+          restaurant.city && restaurant.city.toLowerCase().includes(city)
+      );
+
+      groupByDeals(filteredData);
     } catch (err) {
       setError(err.detail || "Search failed");
       console.error("Error searching restaurants:", err);
@@ -162,6 +297,90 @@ export default function Dashboard() {
     return category ? category.gradient : "from-gray-400 to-gray-600";
   };
 
+  const renderRestaurantCard = (restaurant) => (
+    <div
+      key={restaurant.id}
+      onClick={() => handleRestaurantClick(restaurant.id)}
+      className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 cursor-pointer"
+    >
+      <div
+        className={`h-48 bg-gradient-to-br ${getCategoryGradient(
+          restaurant.cuisine
+        )} relative flex items-center justify-center`}
+      >
+        {restaurant.thumbnail ? (
+          <img
+            src={restaurant.thumbnail}
+            alt={restaurant.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="text-8xl">{getCategoryEmoji(restaurant.cuisine)}</div>
+        )}
+        {restaurant.deals && restaurant.deals.length > 0 && (
+          <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+            {restaurant.deals[0].discount_type === "percentage"
+              ? `${restaurant.deals[0].discount_value}% OFF`
+              : `$${restaurant.deals[0].discount_value} OFF`}
+          </div>
+        )}
+      </div>
+
+      <div className="p-5">
+        <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">
+          {restaurant.name}
+        </h3>
+
+        <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+          <div className="flex items-center gap-1">
+            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+            <span className="font-semibold">{restaurant.rating}</span>
+            <span>({restaurant.totalReviews})</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {restaurant.cuisine &&
+            restaurant.cuisine.slice(0, 2).map((cuisine, idx) => (
+              <span
+                key={idx}
+                className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full"
+              >
+                {cuisine}
+              </span>
+            ))}
+        </div>
+
+        {restaurant.deals && restaurant.deals.length > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-2 mb-3">
+            <p className="text-xs text-orange-800 font-semibold">
+              {restaurant.deals[0].title}
+            </p>
+            {restaurant.deals.length > 1 && (
+              <p className="text-xs text-orange-600 mt-1">
+                +{restaurant.deals.length - 1} more deal
+                {restaurant.deals.length > 2 ? "s" : ""}
+              </p>
+            )}
+          </div>
+        )}
+
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+          {restaurant.description}
+        </p>
+
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+          <MapPin className="w-4 h-4" />
+          <span className="truncate">{restaurant.city}</span>
+        </div>
+
+        <button className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all">
+          View Details
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50">
       {/* Header */}
@@ -193,14 +412,30 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
-                <MapPin className="w-4 h-4 text-pink-500" />
-                <span className="text-sm font-medium hidden sm:inline">
-                  {userLocation}
-                </span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={detectLocation}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+                  title="Refresh location"
+                >
+                  <Navigation className="w-4 h-4 text-pink-500" />
+                  <span className="text-sm font-medium hidden sm:inline">
+                    {userLocation}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    setManualLocation(userLocation);
+                    setShowLocationModal(true);
+                  }}
+                  className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+                  title="Change location"
+                >
+                  <Edit2 className="w-4 h-4 text-pink-500" />
+                </button>
+              </div>
 
-              <button 
+              <button
                 onClick={() => navigate("/profile")}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full hover:shadow-lg transition-all cursor-pointer"
               >
@@ -224,10 +459,63 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Location Change Modal */}
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Change Location
+            </h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Enter City Name
+              </label>
+              <input
+                type="text"
+                value={manualLocation}
+                onChange={(e) => setManualLocation(e.target.value)}
+                placeholder="e.g., New Brunswick, NJ"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-pink-500 transition-colors"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleManualLocationChange();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowLocationModal(false);
+                  setManualLocation("");
+                }}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleManualLocationChange}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+              >
+                Save Location
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {/* Location Error */}
+        {locationError && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <p className="text-yellow-800 text-center">{locationError}</p>
+          </div>
+        )}
+
         {/* Categories */}
         <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Categories</h2>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
             <button
               onClick={() => setSelectedCategory("All")}
@@ -263,24 +551,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="mb-8 flex gap-3 flex-wrap">
-          {filters.map((filter) => (
-            <button
-              key={filter.name}
-              onClick={() => setSelectedFilter(filter.name)}
-              className={`px-4 py-2 rounded-full font-medium transition-all ${
-                selectedFilter === filter.name
-                  ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
-                  : "bg-white border-2 border-gray-200 text-gray-700 hover:border-pink-500"
-              }`}
-            >
-              <span className="mr-2">{filter.icon}</span>
-              {filter.name}
-            </button>
-          ))}
-        </div>
-
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center py-20">
@@ -298,96 +568,45 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Restaurants Grid */}
-        {!loading && !error && restaurants.length > 0 && (
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              {searchQuery
-                ? `Search Results for "${searchQuery}"`
-                : `🍽️ Available Restaurants`}
-            </h2>
+        {/* Grouped Restaurants */}
+        {!loading && !error && Object.keys(groupedRestaurants).length > 0 && (
+          <div className="space-y-12">
+            {Object.entries(groupedRestaurants).map(
+              ([groupName, groupRestaurants]) => (
+                <div key={groupName}>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                    {groupName === "Special Offers & Deals" ? "🎊" : "🍽️"}{" "}
+                    {groupName} in {userLocation}
+                    <span className="text-lg font-normal text-gray-500">
+                      ({groupRestaurants.length})
+                    </span>
+                  </h2>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {restaurants.map((restaurant) => (
-                <div
-                  key={restaurant.id}
-                  onClick={() => handleRestaurantClick(restaurant.id)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 cursor-pointer"
-                >
-                  <div
-                    className={`h-48 bg-gradient-to-br ${getCategoryGradient(
-                      restaurant.cuisine
-                    )} relative flex items-center justify-center`}
-                  >
-                    {restaurant.thumbnail ? (
-                      <img
-                        src={restaurant.thumbnail}
-                        alt={restaurant.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-8xl">
-                        {getCategoryEmoji(restaurant.cuisine)}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-5">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">
-                      {restaurant.name}
-                    </h3>
-
-                    <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="font-semibold">
-                          {restaurant.rating}
-                        </span>
-                        <span>({restaurant.totalReviews})</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      {restaurant.cuisine &&
-                        restaurant.cuisine.slice(0, 2).map((cuisine, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full"
-                          >
-                            {cuisine}
-                          </span>
-                        ))}
-                    </div>
-
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {restaurant.description}
-                    </p>
-
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                      <MapPin className="w-4 h-4" />
-                      <span className="truncate">{restaurant.city}</span>
-                    </div>
-
-                    <button className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all">
-                      View Details
-                    </button>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {groupRestaurants.map(renderRestaurantCard)}
                   </div>
                 </div>
-              ))}
-            </div>
+              )
+            )}
           </div>
         )}
 
         {/* No Results */}
-        {!loading && !error && restaurants.length === 0 && (
+        {!loading && !error && Object.keys(groupedRestaurants).length === 0 && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-2xl font-bold text-gray-700 mb-2">
-              No restaurants found
+              No restaurants found in {userLocation}
             </h3>
-            <p className="text-gray-500">
-              Try adjusting your filters or search query
+            <p className="text-gray-500 mb-4">
+              Try changing your location or search criteria
             </p>
+            <button
+              onClick={() => setShowLocationModal(true)}
+              className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+            >
+              Change Location
+            </button>
           </div>
         )}
       </main>

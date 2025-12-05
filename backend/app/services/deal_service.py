@@ -13,7 +13,6 @@ async def get_restaurant_deals(restaurant_id: str) -> List[Dict]:
     if not restaurant:
         return []
     
-    # ✅ Changed from "deals" to "promos"
     deals = restaurant.get("promos", [])
     
     # Filter only active deals that are currently valid
@@ -24,12 +23,16 @@ async def get_restaurant_deals(restaurant_id: str) -> List[Dict]:
         if not deal.get("is_active"):
             continue
         
-        # Check if deal is within valid date range
-        start_date = datetime.strptime(deal.get("start_date"), "%Y-%m-%d").date()
-        end_date = datetime.strptime(deal.get("end_date"), "%Y-%m-%d").date()
-        
-        if start_date <= current_date <= end_date:
-            active_deals.append(_format_deal(deal))
+        try:
+            # Check if deal is within valid date range
+            start_date = datetime.strptime(deal.get("start_date"), "%Y-%m-%d").date()
+            end_date = datetime.strptime(deal.get("end_date"), "%Y-%m-%d").date()
+            
+            if start_date <= current_date <= end_date:
+                active_deals.append(_format_deal(deal))
+        except Exception as e:
+            print(f"Error processing deal: {e}")
+            continue
     
     return active_deals
 
@@ -47,7 +50,6 @@ async def get_applicable_deals(
     if not restaurant:
         return []
     
-    # ✅ Changed from "deals" to "promos"
     deals = restaurant.get("promos", [])
     
     # Parse date and time
@@ -64,24 +66,28 @@ async def get_applicable_deals(
         if not deal.get("is_active"):
             continue
         
-        # Check date range
-        start_date = datetime.strptime(deal.get("start_date"), "%Y-%m-%d").date()
-        end_date = datetime.strptime(deal.get("end_date"), "%Y-%m-%d").date()
-        
-        if not (start_date <= reservation_date <= end_date):
+        try:
+            # Check date range
+            start_date = datetime.strptime(deal.get("start_date"), "%Y-%m-%d").date()
+            end_date = datetime.strptime(deal.get("end_date"), "%Y-%m-%d").date()
+            
+            if not (start_date <= reservation_date <= end_date):
+                continue
+            
+            # Check valid days
+            valid_days = deal.get("valid_days", [])
+            if valid_days and day_name not in valid_days:
+                continue
+            
+            # Check time range
+            deal_start = time(*map(int, deal.get("time_start", "00:00").split(":")))
+            deal_end = time(*map(int, deal.get("time_end", "23:59").split(":")))
+            
+            if deal_start <= slot_time <= deal_end:
+                applicable_deals.append(_format_deal(deal))
+        except Exception as e:
+            print(f"Error processing deal: {e}")
             continue
-        
-        # Check valid days
-        valid_days = deal.get("valid_days", [])
-        if valid_days and day_name not in valid_days:
-            continue
-        
-        # Check time range
-        deal_start = time(*map(int, deal.get("time_start", "00:00").split(":")))
-        deal_end = time(*map(int, deal.get("time_end", "23:59").split(":")))
-        
-        if deal_start <= slot_time <= deal_end:
-            applicable_deals.append(_format_deal(deal))
     
     return applicable_deals
 
