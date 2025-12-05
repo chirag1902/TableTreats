@@ -48,22 +48,6 @@ async def get_restaurant_details(restaurant_id: str):
         raise HTTPException(status_code=404, detail="Restaurant not found")
     return restaurant
 
-@router.get("/customers/restaurants/{restaurant_id}/deals", response_model=List[DealOut])
-async def get_restaurant_deals(restaurant_id: str):
-    """Get all active deals for a restaurant"""
-    deals = await deal_service.get_restaurant_deals(restaurant_id)
-    return deals
-
-@router.get("/customers/restaurants/{restaurant_id}/deals/applicable")
-async def get_applicable_deals(
-    restaurant_id: str,
-    date: str,
-    time_slot: str
-):
-    """Get deals applicable for a specific reservation date and time"""
-    deals = await deal_service.get_applicable_deals(restaurant_id, date, time_slot)
-    return deals
-
 @router.get("/restaurant/image/{file_id}")
 async def get_restaurant_image(file_id: str):
     """

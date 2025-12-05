@@ -16,10 +16,18 @@ import {
   X,
   CheckCircle,
   AlertCircle,
+  Tag,
+  Percent,
+  Armchair,
 } from "lucide-react";
 import { getRestaurantById } from "../services/restaurantService";
-import { createReservation, getDailyAvailability } from "../services/api";
+import {
+  createReservation,
+  checkAvailability,
+  getDailyAvailability,
+} from "../services/api";
 import logoImage from "../assets/logo.png";
+import axios from "axios";
 
 export default function RestaurantDetails() {
   const { id } = useParams();
@@ -29,6 +37,8 @@ export default function RestaurantDetails() {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [deals, setDeals] = useState([]);
+  const [dealsLoading, setDealsLoading] = useState(false);
 
   // Booking modal state
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -36,12 +46,14 @@ export default function RestaurantDetails() {
     date: "",
     time_slot: "",
     number_of_guests: 2,
+    seating_area_id: "",
     customer_name: "",
     customer_email: "",
     customer_phone: "",
     special_requests: "",
   });
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [seatingAreas, setSeatingAreas] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -63,6 +75,7 @@ export default function RestaurantDetails() {
     }));
 
     fetchRestaurantDetails();
+    fetchRestaurantDeals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate]);
 
@@ -73,6 +86,18 @@ export default function RestaurantDetails() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookingData.date, restaurant]);
+
+  // Check availability and fetch seating areas when time slot and guests change
+  useEffect(() => {
+    if (
+      bookingData.date &&
+      bookingData.time_slot &&
+      bookingData.number_of_guests
+    ) {
+      fetchSeatingAreas();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingData.date, bookingData.time_slot, bookingData.number_of_guests]);
 
   const fetchRestaurantDetails = async () => {
     try {
@@ -89,13 +114,34 @@ export default function RestaurantDetails() {
     }
   };
 
+  // Update the fetchRestaurantDeals function in RestaurantDetails.jsx
+
+  const fetchRestaurantDeals = async () => {
+    try {
+      setDealsLoading(true);
+      console.log("Fetching deals for restaurant:", id);
+
+      // ✅ Updated URL - now using /api/restaurants instead of /api/customers/restaurants
+      const response = await axios.get(
+        `http://localhost:8000/api/restaurants/${id}/deals`
+      );
+
+      console.log("Deals response:", response.data);
+      setDeals(response.data || []);
+    } catch (err) {
+      console.error("Error fetching deals:", err);
+      console.error("Error details:", err.response?.data);
+      setDeals([]);
+    } finally {
+      setDealsLoading(false);
+    }
+  };
+
   const fetchAvailableSlots = async () => {
     try {
       const data = await getDailyAvailability(restaurant.id, bookingData.date);
 
-      // Backend returns array directly, not wrapped in object
       if (Array.isArray(data)) {
-        // Filter out slots that have already passed (only for today)
         const today = new Date().toISOString().split("T")[0];
         const isToday = bookingData.date === today;
 
@@ -103,12 +149,9 @@ export default function RestaurantDetails() {
           const now = new Date();
           const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-          // Filter slots that are at least 30 minutes ahead
           const filteredSlots = data.filter((slot) => {
             const [hours, minutes] = slot.time_slot.split(":").map(Number);
             const slotMinutes = hours * 60 + minutes;
-
-            // Slot must be at least 30 minutes from now
             return slotMinutes >= currentMinutes + 30;
           });
 
@@ -128,10 +171,46 @@ export default function RestaurantDetails() {
     }
   };
 
+  const fetchSeatingAreas = async () => {
+    try {
+      const availabilityData = await checkAvailability(
+        restaurant.id,
+        bookingData.date,
+        bookingData.time_slot,
+        bookingData.number_of_guests
+      );
+
+      if (availabilityData.available_seating_areas) {
+        setSeatingAreas(availabilityData.available_seating_areas);
+        // Auto-select first available seating area
+        if (availabilityData.available_seating_areas.length > 0) {
+          setBookingData((prev) => ({
+            ...prev,
+            seating_area_id:
+              availabilityData.available_seating_areas[0].area_id,
+          }));
+        }
+      } else {
+        setSeatingAreas([]);
+        setBookingData((prev) => ({ ...prev, seating_area_id: "" }));
+      }
+    } catch (err) {
+      console.error("Error checking availability:", err);
+      setSeatingAreas([]);
+      setBookingData((prev) => ({ ...prev, seating_area_id: "" }));
+    }
+  };
+
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
     setBookingLoading(true);
     setBookingError("");
+
+    if (!bookingData.seating_area_id) {
+      setBookingError("Please select a seating area");
+      setBookingLoading(false);
+      return;
+    }
 
     try {
       const reservationData = {
@@ -161,9 +240,13 @@ export default function RestaurantDetails() {
     setBookingError("");
     setBookingSuccess(false);
 
-    // Set default date to today
     const today = new Date().toISOString().split("T")[0];
-    setBookingData((prev) => ({ ...prev, date: today }));
+    setBookingData((prev) => ({
+      ...prev,
+      date: today,
+      time_slot: "",
+      seating_area_id: "",
+    }));
   };
 
   if (loading) {
@@ -317,8 +400,8 @@ export default function RestaurantDetails() {
           {/* Main Info */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-3xl shadow-xl p-8">
-              <div className="flex items-start justify-between mb-6">
-                <div>
+              <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
+                <div className="flex-1">
                   <h1 className="text-4xl font-bold text-gray-900 mb-2">
                     {restaurant.name}
                   </h1>
@@ -334,7 +417,73 @@ export default function RestaurantDetails() {
                     </div>
                   </div>
                 </div>
+
+                {/* Active Deals Badge */}
+                {!dealsLoading && deals.length > 0 && (
+                  <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full flex items-center gap-2 font-semibold shadow-lg">
+                    <Tag className="w-5 h-5" />
+                    <span>
+                      {deals.length} Active Deal{deals.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                )}
               </div>
+
+              {/* Promotions Section */}
+              {dealsLoading && (
+                <div className="mb-6 p-6 bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl border-2 border-purple-200">
+                  <div className="flex items-center justify-center gap-2 text-purple-600">
+                    <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Loading deals...</span>
+                  </div>
+                </div>
+              )}
+
+              {!dealsLoading && deals.length > 0 && (
+                <div className="mb-6 p-6 bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl border-2 border-purple-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Percent className="w-6 h-6 text-purple-600" />
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Special Offers
+                    </h3>
+                  </div>
+                  <div className="space-y-3">
+                    {deals.map((deal) => (
+                      <div
+                        key={deal.id}
+                        className="bg-white p-5 rounded-xl shadow-md border-l-4 border-purple-500 hover:shadow-lg transition-shadow"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-bold text-gray-900 text-lg">
+                                {deal.title}
+                              </h4>
+                              {deal.is_active && (
+                                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-600 leading-relaxed">
+                              {deal.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!dealsLoading && deals.length === 0 && (
+                <div className="mb-6 p-4 bg-gray-50 rounded-2xl border-2 border-gray-200 text-center">
+                  <Tag className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-gray-500 text-sm">
+                    No active deals at this time
+                  </p>
+                </div>
+              )}
 
               {/* Cuisine Tags */}
               {restaurant.cuisine && restaurant.cuisine.length > 0 && (
@@ -688,6 +837,7 @@ export default function RestaurantDetails() {
                       ...bookingData,
                       date: e.target.value,
                       time_slot: "",
+                      seating_area_id: "",
                     })
                   }
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
@@ -712,6 +862,7 @@ export default function RestaurantDetails() {
                             setBookingData({
                               ...bookingData,
                               time_slot: slot.time_slot,
+                              seating_area_id: "",
                             })
                           }
                           className={`px-4 py-3 rounded-xl font-semibold transition-all ${
@@ -750,6 +901,7 @@ export default function RestaurantDetails() {
                     setBookingData({
                       ...bookingData,
                       number_of_guests: parseInt(e.target.value),
+                      seating_area_id: "",
                     })
                   }
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500"
@@ -761,6 +913,58 @@ export default function RestaurantDetails() {
                   ))}
                 </select>
               </div>
+
+              {/* Seating Area Selection */}
+              {bookingData.time_slot && seatingAreas.length > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Armchair className="w-4 h-4 inline mr-1" />
+                    Select Seating Area
+                  </label>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {seatingAreas.map((area) => (
+                      <button
+                        key={area.area_id}
+                        type="button"
+                        onClick={() =>
+                          setBookingData({
+                            ...bookingData,
+                            seating_area_id: area.area_id,
+                          })
+                        }
+                        className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                          bookingData.seating_area_id === area.area_id
+                            ? "border-purple-500 bg-purple-50"
+                            : "border-gray-200 hover:border-purple-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-bold text-gray-900">
+                            {area.area_name}
+                          </h4>
+                          <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                            {area.area_type}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span>👥 {area.seats_per_table} seats/table</span>
+                          <span>📊 Capacity: {area.area_capacity}</span>
+                          <span className="text-green-600 font-semibold">
+                            ✓ {area.available_tables} tables available
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bookingData.time_slot && seatingAreas.length === 0 && (
+                <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl text-yellow-800 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  No seating areas available for this time slot and guest count
+                </div>
+              )}
 
               {/* Customer Information */}
               <div className="grid md:grid-cols-2 gap-4">
@@ -839,7 +1043,10 @@ export default function RestaurantDetails() {
               <button
                 onClick={handleBookingSubmit}
                 disabled={
-                  bookingLoading || bookingSuccess || !bookingData.time_slot
+                  bookingLoading ||
+                  bookingSuccess ||
+                  !bookingData.time_slot ||
+                  !bookingData.seating_area_id
                 }
                 className="w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-lg rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >

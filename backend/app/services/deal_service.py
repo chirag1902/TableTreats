@@ -13,7 +13,8 @@ async def get_restaurant_deals(restaurant_id: str) -> List[Dict]:
     if not restaurant:
         return []
     
-    deals = restaurant.get("deals", [])
+    # ✅ Changed from "deals" to "promos"
+    deals = restaurant.get("promos", [])
     
     # Filter only active deals that are currently valid
     active_deals = []
@@ -46,7 +47,8 @@ async def get_applicable_deals(
     if not restaurant:
         return []
     
-    deals = restaurant.get("deals", [])
+    # ✅ Changed from "deals" to "promos"
+    deals = restaurant.get("promos", [])
     
     # Parse date and time
     reservation_date = datetime.strptime(date, "%Y-%m-%d").date()
