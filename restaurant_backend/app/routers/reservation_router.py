@@ -1,12 +1,10 @@
-from fastapi import APIRouter, HTTPException, Query, Depends, status
+from fastapi import APIRouter, HTTPException, Query, Depends
+from typing import Optional
 from datetime import datetime, timedelta
 from bson import ObjectId
 
 from app.database import db
 from app.services.auth import get_current_restaurant
-from app.schemas.bill_schema import BillCreate, BillUpdate, BillResponse, BillItemResponse
-from typing import List, Optional
-import uuid  # ← Make sure this is here!
 
 router = APIRouter()
 
@@ -124,7 +122,42 @@ async def get_todays_reservations(current_user: dict = Depends(get_current_resta
     }
 
 
-
+@router.get("/restaurant/reservations/{reservation_id}")
+async def get_reservation_details(
+    reservation_id: str,
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Get detailed reservation information"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    restaurant_id = str(restaurant["_id"])
+    
+    try:
+        reservation = await db.reservations.find_one({"_id": ObjectId(reservation_id)})
+    except:
+        raise HTTPException(status_code=400, detail="Invalid reservation ID")
+    
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    
+    if reservation["restaurant_id"] != restaurant_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this reservation")
+    
+    return {
+        "id": str(reservation["_id"]),
+        "customer_name": reservation["customer_name"],
+        "customer_email": reservation["customer_email"],
+        "customer_phone": reservation["customer_phone"],
+        "date": reservation["date"],
+        "time_slot": reservation["time_slot"],
+        "number_of_guests": reservation["number_of_guests"],
+        "status": reservation["status"],
+        "special_requests": reservation.get("special_requests"),
+        "created_at": reservation["created_at"],
+        "updated_at": reservation.get("updated_at")
+    }
 
 
 @router.put("/restaurant/reservations/{reservation_id}/cancel")
@@ -361,491 +394,3 @@ async def get_todays_checkin_status(current_user: dict = Depends(get_current_res
         },
         "reservations": formatted_reservations
     }
-
-# ==================== BILL MANAGEMENT ENDPOINTS ====================
-
-@router.get("/restaurant/reservations/checked-in-unbilled")
-async def get_checked_in_customers_for_billing(
-    current_user: dict = Depends(get_current_restaurant)
-):
-    """Get list of checked-in customers who don't have a bill yet (for dropdown)"""
-    try:
-        print("=" * 50)
-        print("DEBUG: Starting get_checked_in_customers_for_billing")
-        print(f"Current user email: {current_user.get('email')}")
-        
-        restaurant = await db.restaurants.find_one({"email": current_user["email"]})
-        if not restaurant:
-            print("ERROR: Restaurant not found")
-            raise HTTPException(status_code=404, detail="Restaurant not found")
-        
-        restaurant_id = str(restaurant["_id"])
-        today = datetime.now().strftime("%Y-%m-%d")
-        
-        print(f"Restaurant ID: {restaurant_id}")
-        print(f"Today's date: {today}")
-        
-        # Simpler query first - let's see all checked-in reservations
-        query = {
-            "restaurant_id": restaurant_id,
-            "date": today,
-            "status": "confirmed",
-            "checked_in": True
-        }
-        
-        print(f"Query: {query}")
-        
-        # Get all checked-in reservations
-        all_reservations = await db.reservations.find(query).to_list(length=None)
-        print(f"Found {len(all_reservations)} checked-in reservations")
-        
-        # Filter out those with bills manually
-        reservations = []
-        for res in all_reservations:
-            has_bill = "bill" in res and res["bill"] is not None
-            print(f"Reservation {res.get('customer_name')}: has_bill={has_bill}")
-            if not has_bill:
-                reservations.append(res)
-        
-        print(f"Found {len(reservations)} reservations without bills")
-        
-        # Format for dropdown
-        customers = []
-        for res in reservations:
-            customer_data = {
-                "reservation_id": str(res["_id"]),
-                "customer_name": res["customer_name"],
-                "customer_email": res.get("customer_email", ""),
-                "customer_phone": res.get("customer_phone", ""),
-                "number_of_guests": res["number_of_guests"],
-                "time_slot": res["time_slot"],
-                "display_text": f"{res['customer_name']} - {res['number_of_guests']} guests at {res['time_slot']}"
-            }
-            customers.append(customer_data)
-            print(f"Added customer: {customer_data}")
-        
-        print(f"Returning {len(customers)} customers")
-        print("=" * 50)
-        
-        return {
-            "total": len(customers),
-            "customers": customers
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"ERROR: Unexpected exception: {str(e)}")
-        print(f"Exception type: {type(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Internal server error: {str(e)}"
-        )
-
-
-def calculate_bill_totals(items_data: List[dict], promos: List[dict], tax_rate: float):
-    """
-    Helper function to calculate bill totals with promo discounts
-    
-    Args:
-        items_data: List of items with dish_name, quantity, unit_price, promo_id
-        promos: List of restaurant's promos
-        tax_rate: Tax rate percentage
-    
-    Returns:
-        Tuple of (processed_items, subtotal, discount_total, tax_amount, total)
-    """
-    processed_items = []
-    subtotal = 0
-    discount_total = 0
-    
-    for item in items_data:
-        # Calculate item subtotal
-        item_subtotal = round(item["quantity"] * item["unit_price"], 2)
-        subtotal += item_subtotal
-        
-        # Apply promo discount if specified
-        discount_amount = 0
-        deal_applied = None
-        
-        if item.get("promo_id"):
-            # Find the promo
-            promo = next((p for p in promos if p.get("id") == item["promo_id"]), None)
-            
-            if promo and promo.get("is_active", False):
-                discount_type = promo.get("discount_type")
-                discount_value = promo.get("discount_value")
-                
-                if discount_type == "percentage":
-                    discount_amount = round(item_subtotal * (discount_value / 100), 2)
-                elif discount_type == "flat_amount":
-                    discount_amount = min(discount_value, item_subtotal)
-                elif discount_type == "bogo":
-                    # BOGO: If quantity >= 2, discount half
-                    if item["quantity"] >= 2:
-                        free_items = item["quantity"] // 2
-                        discount_amount = round(free_items * item["unit_price"], 2)
-                
-                discount_total += discount_amount
-                
-                deal_applied = {
-                    "deal_id": promo["id"],
-                    "deal_name": promo["title"],
-                    "deal_type": promo["discount_type"],
-                    "discount_value": promo.get("discount_value")
-                }
-        
-        final_item_amount = item_subtotal - discount_amount
-        
-        processed_items.append({
-            "item_id": str(uuid.uuid4()),
-            "dish_name": item["dish_name"],
-            "quantity": item["quantity"],
-            "unit_price": item["unit_price"],
-            "subtotal": item_subtotal,
-            "discount_amount": discount_amount,
-            "final_amount": final_item_amount,
-            "deal_applied": deal_applied
-        })
-    
-    # Calculate totals
-    subtotal_after_discount = round(subtotal - discount_total, 2)
-    tax_amount = round(subtotal_after_discount * (tax_rate / 100), 2)
-    total = round(subtotal_after_discount + tax_amount, 2)
-    
-    return processed_items, subtotal, discount_total, tax_amount, total
-
-@router.get("/restaurant/reservations/{reservation_id}")
-async def get_reservation_details(
-    reservation_id: str,
-    current_user: dict = Depends(get_current_restaurant)
-):
-    """Get detailed reservation information"""
-    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
-    
-    restaurant_id = str(restaurant["_id"])
-    
-    try:
-        reservation = await db.reservations.find_one({"_id": ObjectId(reservation_id)})
-    except:
-        raise HTTPException(status_code=400, detail="Invalid reservation ID")
-    
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reservation not found")
-    
-    if reservation["restaurant_id"] != restaurant_id:
-        raise HTTPException(status_code=403, detail="Not authorized to view this reservation")
-    
-    return {
-        "id": str(reservation["_id"]),
-        "customer_name": reservation["customer_name"],
-        "customer_email": reservation["customer_email"],
-        "customer_phone": reservation["customer_phone"],
-        "date": reservation["date"],
-        "time_slot": reservation["time_slot"],
-        "number_of_guests": reservation["number_of_guests"],
-        "status": reservation["status"],
-        "special_requests": reservation.get("special_requests"),
-        "created_at": reservation["created_at"],
-        "updated_at": reservation.get("updated_at")
-    }
-
-
-@router.post("/restaurant/bills", status_code=status.HTTP_201_CREATED)
-async def create_bill(
-    payload: BillCreate,
-    current_user: dict = Depends(get_current_restaurant)
-):
-    """Create a bill for a reservation"""
-    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
-    
-    restaurant_id = str(restaurant["_id"])
-    
-    # Find reservation
-    try:
-        reservation = await db.reservations.find_one({"_id": ObjectId(payload.reservation_id)})
-    except:
-        raise HTTPException(status_code=400, detail="Invalid reservation ID")
-    
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reservation not found")
-    
-    # Verify reservation belongs to this restaurant
-    if reservation["restaurant_id"] != restaurant_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    # Check if reservation is checked in
-    if not reservation.get("checked_in", False):
-        raise HTTPException(status_code=400, detail="Customer must be checked in before creating bill")
-    
-    # Check if bill already exists
-    if reservation.get("bill"):
-        raise HTTPException(status_code=400, detail="Bill already exists for this reservation")
-    
-    # Get restaurant promos for discount calculation
-    promos = restaurant.get("promos", [])
-    
-    # Convert payload items to dict format
-    items_data = [item.dict() for item in payload.items]
-    
-    # Calculate totals
-    processed_items, subtotal, discount_total, tax_amount, total = calculate_bill_totals(
-        items_data, promos, payload.tax_rate
-    )
-    
-    # Create bill document
-    bill_data = {
-        "bill_id": str(uuid.uuid4()),
-        "items": processed_items,
-        "subtotal": subtotal,
-        "discount_total": discount_total,
-        "subtotal_after_discount": round(subtotal - discount_total, 2),
-        "tax_rate": payload.tax_rate,
-        "tax_amount": tax_amount,
-        "total": total,
-        "notes": payload.notes,
-        "created_at": datetime.utcnow(),
-        "updated_at": None
-    }
-    
-    # Add bill to reservation
-    await db.reservations.update_one(
-        {"_id": ObjectId(payload.reservation_id)},
-        {"$set": {
-            "bill": bill_data,
-            "updated_at": datetime.utcnow()
-        }}
-    )
-    
-    return {
-        "message": "Bill created successfully",
-        "bill_id": bill_data["bill_id"],
-        "reservation_id": payload.reservation_id,
-        "total": total,
-        "bill": bill_data
-    }
-
-
-@router.get("/restaurant/bills/{reservation_id}")
-async def get_bill(
-    reservation_id: str,
-    current_user: dict = Depends(get_current_restaurant)
-):
-    """Get bill details for a reservation"""
-    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
-    
-    restaurant_id = str(restaurant["_id"])
-    
-    # Find reservation
-    try:
-        reservation = await db.reservations.find_one({"_id": ObjectId(reservation_id)})
-    except:
-        raise HTTPException(status_code=400, detail="Invalid reservation ID")
-    
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reservation not found")
-    
-    # Verify reservation belongs to this restaurant
-    if reservation["restaurant_id"] != restaurant_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    # Check if bill exists
-    if not reservation.get("bill"):
-        raise HTTPException(status_code=404, detail="No bill found for this reservation")
-    
-    bill = reservation["bill"]
-    
-    return {
-        "bill_id": bill["bill_id"],
-        "reservation_id": str(reservation["_id"]),
-        "customer_name": reservation["customer_name"],
-        "customer_email": reservation.get("customer_email", ""),
-        "customer_phone": reservation.get("customer_phone", ""),
-        "number_of_guests": reservation["number_of_guests"],
-        "date": reservation["date"],
-        "time_slot": reservation["time_slot"],
-        "items": bill["items"],
-        "subtotal": bill["subtotal"],
-        "discount_total": bill["discount_total"],
-        "subtotal_after_discount": bill["subtotal_after_discount"],
-        "tax_rate": bill["tax_rate"],
-        "tax_amount": bill["tax_amount"],
-        "total": bill["total"],
-        "notes": bill.get("notes"),
-        "created_at": bill["created_at"],
-        "updated_at": bill.get("updated_at")
-    }
-
-
-@router.put("/restaurant/bills/{reservation_id}")
-async def update_bill(
-    reservation_id: str,
-    payload: BillUpdate,
-    current_user: dict = Depends(get_current_restaurant)
-):
-    """Update bill items or tax rate"""
-    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
-    
-    restaurant_id = str(restaurant["_id"])
-    
-    # Find reservation
-    try:
-        reservation = await db.reservations.find_one({"_id": ObjectId(reservation_id)})
-    except:
-        raise HTTPException(status_code=400, detail="Invalid reservation ID")
-    
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reservation not found")
-    
-    if reservation["restaurant_id"] != restaurant_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    if not reservation.get("bill"):
-        raise HTTPException(status_code=404, detail="No bill found for this reservation")
-    
-    bill = reservation["bill"]
-    
-    # Update items if provided
-    if payload.items is not None:
-        promos = restaurant.get("promos", [])
-        items_data = [item.dict() for item in payload.items]
-        tax_rate = payload.tax_rate if payload.tax_rate is not None else bill["tax_rate"]
-        
-        processed_items, subtotal, discount_total, tax_amount, total = calculate_bill_totals(
-            items_data, promos, tax_rate
-        )
-        
-        bill["items"] = processed_items
-        bill["subtotal"] = subtotal
-        bill["discount_total"] = discount_total
-        bill["subtotal_after_discount"] = round(subtotal - discount_total, 2)
-        bill["tax_amount"] = tax_amount
-        bill["total"] = total
-        bill["tax_rate"] = tax_rate
-    
-    # Update tax rate only if provided and items not updated
-    elif payload.tax_rate is not None:
-        subtotal_after_discount = bill["subtotal_after_discount"]
-        tax_amount = round(subtotal_after_discount * (payload.tax_rate / 100), 2)
-        total = round(subtotal_after_discount + tax_amount, 2)
-        
-        bill["tax_rate"] = payload.tax_rate
-        bill["tax_amount"] = tax_amount
-        bill["total"] = total
-    
-    # Update notes if provided
-    if payload.notes is not None:
-        bill["notes"] = payload.notes
-    
-    bill["updated_at"] = datetime.utcnow()
-    
-    # Update in database
-    await db.reservations.update_one(
-        {"_id": ObjectId(reservation_id)},
-        {"$set": {
-            "bill": bill,
-            "updated_at": datetime.utcnow()
-        }}
-    )
-    
-    return {
-        "message": "Bill updated successfully",
-        "bill_id": bill["bill_id"],
-        "total": bill["total"]
-    }
-
-
-@router.delete("/restaurant/bills/{reservation_id}")
-async def delete_bill(
-    reservation_id: str,
-    current_user: dict = Depends(get_current_restaurant)
-):
-    """Delete a bill"""
-    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
-    
-    restaurant_id = str(restaurant["_id"])
-    
-    try:
-        reservation = await db.reservations.find_one({"_id": ObjectId(reservation_id)})
-    except:
-        raise HTTPException(status_code=400, detail="Invalid reservation ID")
-    
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reservation not found")
-    
-    if reservation["restaurant_id"] != restaurant_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    if not reservation.get("bill"):
-        raise HTTPException(status_code=404, detail="No bill found")
-    
-    # Remove bill from reservation
-    await db.reservations.update_one(
-        {"_id": ObjectId(reservation_id)},
-        {
-            "$unset": {"bill": ""},
-            "$set": {"updated_at": datetime.utcnow()}
-        }
-    )
-    
-    return {
-        "message": "Bill deleted successfully",
-        "reservation_id": reservation_id
-    }
-
-
-@router.get("/restaurant/bills")
-async def get_all_bills(
-    date: Optional[str] = Query(None, description="Filter by date YYYY-MM-DD"),
-    current_user: dict = Depends(get_current_restaurant)
-):
-    """Get all bills for the restaurant"""
-    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
-    
-    restaurant_id = str(restaurant["_id"])
-    
-    # Build query
-    query = {
-        "restaurant_id": restaurant_id,
-        "bill": {"$exists": True}
-    }
-    
-    if date:
-        query["date"] = date
-    
-    # Get reservations with bills
-    reservations = await db.reservations.find(query).sort("date", -1).to_list(length=None)
-    
-    bills = []
-    for res in reservations:
-        bill = res["bill"]
-        bills.append({
-            "bill_id": bill["bill_id"],
-            "reservation_id": str(res["_id"]),
-            "customer_name": res["customer_name"],
-            "date": res["date"],
-            "time_slot": res["time_slot"],
-            "number_of_guests": res["number_of_guests"],
-            "total": bill["total"],
-            "created_at": bill["created_at"]
-        })
-    
-    return {
-        "total": len(bills),
-        "bills": bills
-    }
-    

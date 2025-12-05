@@ -841,30 +841,6 @@ async def toggle_promo_status(
         "is_active": new_status
     }
 
-@router.get("/restaurant/stats/total-guests")
-async def get_total_guests_count(
-    current_user: dict = Depends(get_current_restaurant)
-):
-    """Get total number of guests that have visited the restaurant since inception"""
-    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
-    if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
-    
-    restaurant_id = str(restaurant["_id"])
-    
-    # Get ALL checked-in reservations (all time)
-    reservations = await db.reservations.find({
-        "restaurant_id": restaurant_id,
-        "checked_in": True
-    }).to_list(length=None)
-    
-    # Sum all guests from all reservations
-    total_guests = sum(res.get("number_of_guests", 0) for res in reservations)
-    
-    return {
-        "total_guests": total_guests
-    }
-
 
 # ==================== PUBLIC ENDPOINT FOR CUSTOMERS ====================
 
@@ -887,4 +863,8 @@ async def get_public_restaurant_promos(restaurant_id: str):
         "restaurant_name": restaurant.get("restaurant_name"),
         "total": len(active_promos),
         "promos": active_promos
+<<<<<<< HEAD
     }
+=======
+    }
+>>>>>>> parent of da330e0 (Bills added)
