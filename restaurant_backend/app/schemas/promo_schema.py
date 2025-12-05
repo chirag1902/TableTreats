@@ -1,7 +1,7 @@
 # app/schemas/promo_schema.py
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List
-from datetime import datetime, time, date
+from datetime import datetime
 
 class PromoCreate(BaseModel):
     """Schema for creating a new promo"""
@@ -16,31 +16,16 @@ class PromoCreate(BaseModel):
     end_date: Optional[str] = Field(None, description="End date in YYYY-MM-DD format")
     is_active: bool = Field(True, description="Whether the promo is currently active")
     
-    @validator('discount_type')
+    @field_validator('discount_type')
+    @classmethod
     def validate_discount_type(cls, v):
         allowed_types = ['percentage', 'bogo', 'flat_amount']
         if v.lower() not in allowed_types:
             raise ValueError(f'Discount type must be one of: {", ".join(allowed_types)}')
         return v.lower()
     
-    @validator('discount_value')
-    def validate_discount_value(cls, v, values):
-        if 'discount_type' in values:
-            discount_type = values['discount_type']
-            # BOGO doesn't need a value
-            if discount_type == 'bogo':
-                return None
-            # Percentage should be between 1-100
-            if discount_type == 'percentage':
-                if v is None or v < 1 or v > 100:
-                    raise ValueError('Percentage discount must be between 1 and 100')
-            # Flat amount should be positive
-            if discount_type == 'flat_amount':
-                if v is None or v <= 0:
-                    raise ValueError('Flat amount discount must be greater than 0')
-        return v
-    
-    @validator('valid_days')
+    @field_validator('valid_days')
+    @classmethod
     def validate_days(cls, v):
         if v is not None:
             allowed_days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -50,7 +35,8 @@ class PromoCreate(BaseModel):
             return [day.lower() for day in v]
         return v
     
-    @validator('time_start', 'time_end')
+    @field_validator('time_start', 'time_end')
+    @classmethod
     def validate_time_format(cls, v):
         if v is not None:
             try:
@@ -65,7 +51,8 @@ class PromoCreate(BaseModel):
                 raise ValueError('Time must be in HH:MM format (e.g., "14:00")')
         return v
     
-    @validator('start_date', 'end_date')
+    @field_validator('start_date', 'end_date')
+    @classmethod
     def validate_date_format(cls, v):
         if v is not None:
             try:
@@ -73,6 +60,36 @@ class PromoCreate(BaseModel):
             except:
                 raise ValueError('Date must be in YYYY-MM-DD format')
         return v
+    
+    @model_validator(mode='after')
+    def validate_discount_and_dates(self):
+        """Validate discount_value based on discount_type and date ranges"""
+        # Validate discount_value with discount_type
+        if self.discount_type == 'bogo':
+            # BOGO doesn't need a value, set it to None
+            self.discount_value = None
+        elif self.discount_type == 'percentage':
+            # Percentage must be between 1-100
+            if self.discount_value is None or self.discount_value < 1 or self.discount_value > 100:
+                raise ValueError('Percentage discount must be between 1 and 100')
+        elif self.discount_type == 'flat_amount':
+            # Flat amount must be positive
+            if self.discount_value is None or self.discount_value <= 0:
+                raise ValueError('Flat amount discount must be greater than 0')
+        
+        # Validate time range
+        if self.time_start and self.time_end:
+            if self.time_start >= self.time_end:
+                raise ValueError('time_start must be before time_end')
+        
+        # Validate date range
+        if self.start_date and self.end_date:
+            start = datetime.strptime(self.start_date, '%Y-%m-%d')
+            end = datetime.strptime(self.end_date, '%Y-%m-%d')
+            if start > end:
+                raise ValueError('start_date must be before or equal to end_date')
+        
+        return self
 
 
 class PromoUpdate(BaseModel):
@@ -88,7 +105,8 @@ class PromoUpdate(BaseModel):
     end_date: Optional[str] = None
     is_active: Optional[bool] = None
     
-    @validator('discount_type')
+    @field_validator('discount_type')
+    @classmethod
     def validate_discount_type(cls, v):
         if v is not None:
             allowed_types = ['percentage', 'bogo', 'flat_amount']
@@ -97,7 +115,8 @@ class PromoUpdate(BaseModel):
             return v.lower()
         return v
     
-    @validator('valid_days')
+    @field_validator('valid_days')
+    @classmethod
     def validate_days(cls, v):
         if v is not None:
             allowed_days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -107,7 +126,8 @@ class PromoUpdate(BaseModel):
             return [day.lower() for day in v]
         return v
     
-    @validator('time_start', 'time_end')
+    @field_validator('time_start', 'time_end')
+    @classmethod
     def validate_time_format(cls, v):
         if v is not None:
             try:
@@ -121,7 +141,8 @@ class PromoUpdate(BaseModel):
                 raise ValueError('Time must be in HH:MM format')
         return v
     
-    @validator('start_date', 'end_date')
+    @field_validator('start_date', 'end_date')
+    @classmethod
     def validate_date_format(cls, v):
         if v is not None:
             try:
@@ -129,6 +150,29 @@ class PromoUpdate(BaseModel):
             except:
                 raise ValueError('Date must be in YYYY-MM-DD format')
         return v
+    
+    @model_validator(mode='after')
+    def validate_discount_value_with_type(self):
+        """Validate discount_value based on discount_type if both are provided"""
+        # Only validate if discount_type is being updated
+        if self.discount_type is not None:
+            if self.discount_type == 'bogo':
+                # BOGO doesn't need a value, set it to None
+                self.discount_value = None
+            elif self.discount_type == 'percentage':
+                # If updating to percentage, discount_value must be between 1-100
+                if self.discount_value is not None and (self.discount_value < 1 or self.discount_value > 100):
+                    raise ValueError('Percentage discount must be between 1 and 100')
+                elif self.discount_value is None:
+                    raise ValueError('Percentage discount requires a discount_value between 1 and 100')
+            elif self.discount_type == 'flat_amount':
+                # If updating to flat_amount, discount_value must be positive
+                if self.discount_value is not None and self.discount_value <= 0:
+                    raise ValueError('Flat amount discount must be greater than 0')
+                elif self.discount_value is None:
+                    raise ValueError('Flat amount discount requires a positive discount_value')
+        
+        return self
 
 
 class PromoResponse(BaseModel):
