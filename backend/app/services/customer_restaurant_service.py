@@ -71,48 +71,11 @@ async def get_todays_deals(
     cursor = Restaurant_db.restaurants.find(query).skip(skip).limit(limit)
     restaurants = await cursor.to_list(length=limit)
     
-    current_date = datetime.utcnow().date()
-    current_day = current_date.strftime("%A").lower()
-    current_time = datetime.utcnow().time()
-    
     result = []
     for restaurant in restaurants:
-        active_deals = []
-        promos = restaurant.get("promos", [])
-        
-        for promo in promos:
-            if not promo.get("is_active"):
-                continue
-            
-            # Check date range
-            try:
-                start_date = datetime.strptime(promo.get("start_date"), "%Y-%m-%d").date()
-                end_date = datetime.strptime(promo.get("end_date"), "%Y-%m-%d").date()
-                
-                if not (start_date <= current_date <= end_date):
-                    continue
-                
-                # Check valid days
-                valid_days = promo.get("valid_days", [])
-                if valid_days and current_day not in valid_days:
-                    continue
-                
-                active_deals.append({
-                    "id": promo.get("id"),
-                    "title": promo.get("title"),
-                    "description": promo.get("description"),
-                    "discount_type": promo.get("discount_type"),
-                    "discount_value": promo.get("discount_value"),
-                    "time_start": promo.get("time_start"),
-                    "time_end": promo.get("time_end")
-                })
-            except Exception as e:
-                print(f"Error processing promo: {e}")
-                continue
-        
-        if active_deals:
-            restaurant_data = await _format_restaurant_summary(restaurant)
-            restaurant_data["activeDeals"] = active_deals
+        restaurant_data = await _format_restaurant_summary(restaurant)
+        # Only include restaurants that have active deals
+        if restaurant_data.get("activeDeals"):
             result.append(restaurant_data)
     
     return result
