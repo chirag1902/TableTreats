@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   Star,
   User,
+  CreditCard,
+  X,
 } from "lucide-react";
 
 export default function MyReservations() {
@@ -25,8 +27,8 @@ export default function MyReservations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [cancelModal, setCancelModal] = useState({ show: false, reservation: null });
 
-  // Fetch reservations from API
   useEffect(() => {
     const fetchReservations = async () => {
       const token = localStorage.getItem("token");
@@ -54,16 +56,13 @@ export default function MyReservations() {
     fetchReservations();
   }, [navigate]);
 
-  // Filter reservations
   useEffect(() => {
     let filtered = reservations;
 
-    // Status filter
     if (statusFilter !== "all") {
       filtered = filtered.filter((r) => r.status === statusFilter);
     }
 
-    // Date filter
     const today = new Date().toISOString().split("T")[0];
     if (dateFilter === "today") {
       filtered = filtered.filter((r) => r.date === today);
@@ -75,7 +74,6 @@ export default function MyReservations() {
       filtered = filtered.filter((r) => r.date < today);
     }
 
-    // Search filter
     if (searchQuery) {
       filtered = filtered.filter(
         (r) =>
@@ -91,27 +89,34 @@ export default function MyReservations() {
     setFilteredReservations(filtered);
   }, [reservations, statusFilter, dateFilter, searchQuery]);
 
-  const handleCancelReservation = async (reservationId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this reservation?"
-    );
-    if (!confirmed) return;
+  const handleCancelReservation = async () => {
+    if (!cancelModal.reservation) return;
 
     try {
-      await cancelReservation(reservationId);
+      await cancelReservation(cancelModal.reservation.id);
 
-      // Update local state
       setReservations(
         reservations.map((r) =>
-          r.id === reservationId ? { ...r, status: "cancelled" } : r
+          r.id === cancelModal.reservation.id ? { ...r, status: "cancelled" } : r
         )
       );
 
-      alert("Reservation cancelled successfully");
+      setCancelModal({ show: false, reservation: null });
     } catch (err) {
       console.error("Failed to cancel reservation:", err);
-      alert("Failed to cancel reservation. Please try again.");
+      alert(err.message || "Failed to cancel reservation. Please try again.");
     }
+  };
+
+  const canCancelReservation = (reservation) => {
+    if (reservation.status === "cancelled" || reservation.status === "completed") {
+      return false;
+    }
+
+    const reservationDateTime = new Date(`${reservation.date}T${reservation.time_slot}`);
+    const now = new Date();
+    
+    return reservationDateTime > now;
   };
 
   const getStatusColor = (status) => {
@@ -171,8 +176,62 @@ export default function MyReservations() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50">
-      {/* Header */}
-      <header className="bg-white shadow-md sticky top-0 z-50">
+      {/* Cancel Modal */}
+      {cancelModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">Cancel Reservation?</h3>
+              <button
+                onClick={() => setCancelModal({ show: false, reservation: null })}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-600 mb-4">
+                Are you sure you want to cancel your reservation at{" "}
+                <span className="font-semibold">{cancelModal.reservation?.restaurant_name}</span>?
+              </p>
+              
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-700">{cancelModal.reservation?.date}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-700">{cancelModal.reservation?.time_slot}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-700">{cancelModal.reservation?.number_of_guests} guests</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCancelModal({ show: false, reservation: null })}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Keep Reservation
+              </button>
+              <button
+                onClick={handleCancelReservation}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <XCircle className="w-4 h-4" />
+                Cancel It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <header className="bg-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -204,7 +263,6 @@ export default function MyReservations() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl text-yellow-800 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
@@ -212,7 +270,6 @@ export default function MyReservations() {
           </div>
         )}
 
-        {/* Stats Cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-2xl p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
@@ -269,10 +326,8 @@ export default function MyReservations() {
           </div>
         </div>
 
-        {/* Filters & Search */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="grid md:grid-cols-3 gap-4">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -284,7 +339,6 @@ export default function MyReservations() {
               />
             </div>
 
-            {/* Status Filter */}
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <select
@@ -300,7 +354,6 @@ export default function MyReservations() {
               </select>
             </div>
 
-            {/* Date Filter */}
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <select
@@ -317,7 +370,6 @@ export default function MyReservations() {
           </div>
         </div>
 
-        {/* Reservations List */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold text-gray-900">
@@ -352,7 +404,6 @@ export default function MyReservations() {
                   className="p-6 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    {/* Restaurant Info */}
                     <div className="flex-1">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
@@ -381,7 +432,6 @@ export default function MyReservations() {
                       </div>
                     </div>
 
-                    {/* Reservation Details */}
                     <div className="flex flex-wrap gap-4 lg:gap-6">
                       <div className="flex items-center gap-2 text-gray-700">
                         <Calendar className="w-5 h-5 text-pink-500" />
@@ -414,30 +464,56 @@ export default function MyReservations() {
                       </div>
                     </div>
 
-                    {/* Status & Actions */}
                     <div className="flex flex-col gap-3">
-                      <span
-                        className={`px-4 py-2 rounded-full text-sm font-semibold border-2 flex items-center gap-2 justify-center ${getStatusColor(
-                          reservation.status
-                        )}`}
-                      >
-                        {getStatusIcon(reservation.status)}
-                        {reservation.status?.charAt(0).toUpperCase() +
-                          reservation.status?.slice(1)}
-                      </span>
-
-                      {reservation.status?.toLowerCase() !== "cancelled" &&
-                        reservation.status?.toLowerCase() !== "completed" && (
-                          <button
-                            onClick={() =>
-                              handleCancelReservation(reservation.id)
-                            }
-                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-semibold flex items-center gap-2 justify-center"
+                      {reservation.checked_in ? (
+                        <>
+                          <span className="px-4 py-2 rounded-full text-sm font-semibold border-2 flex items-center gap-2 justify-center bg-purple-100 text-purple-700 border-purple-300">
+                            <CheckCircle className="w-4 h-4" />
+                            Checked In
+                          </span>
+                          {reservation.bill && (
+                            <button
+                              onClick={() => navigate(`/bill/${reservation.id}`)}
+                              className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-semibold flex items-center gap-2 justify-center"
+                            >
+                              <CreditCard className="w-4 h-4" />
+                              Pay Bill
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <span
+                            className={`px-4 py-2 rounded-full text-sm font-semibold border-2 flex items-center gap-2 justify-center ${getStatusColor(
+                              reservation.status
+                            )}`}
                           >
-                            <XCircle className="w-4 h-4" />
-                            Cancel
-                          </button>
-                        )}
+                            {getStatusIcon(reservation.status)}
+                            {reservation.status?.charAt(0).toUpperCase() +
+                              reservation.status?.slice(1)}
+                          </span>
+
+                          {canCancelReservation(reservation) ? (
+                            <button
+                              onClick={() =>
+                                setCancelModal({ show: true, reservation })
+                              }
+                              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-semibold flex items-center gap-2 justify-center"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Cancel
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed text-sm font-semibold flex items-center gap-2 justify-center"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              Cancel
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

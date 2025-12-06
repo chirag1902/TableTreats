@@ -1,3 +1,4 @@
+# services/reservation_service.py
 from database import Restaurant_db
 from bson import ObjectId
 from typing import Optional, List, Dict
@@ -85,11 +86,9 @@ async def get_available_seating_areas(
         area_capacity = area.get("area_capacity", 0)
         seats_per_table = area.get("seats_per_table", 2)
         
-        # Check if area can accommodate the number of guests
         if area_capacity < number_of_guests:
             continue
         
-        # Get booked capacity for this area in this timeslot
         timeslot_doc = await Restaurant_db.timeslots.find_one({
             "restaurantId": restaurant_id,
             "date": date,
@@ -100,7 +99,6 @@ async def get_available_seating_areas(
         booked = timeslot_doc.get("booked", 0) if timeslot_doc else 0
         remaining = area_capacity - booked
         
-        # Check if there's enough space for the guests
         if remaining >= number_of_guests:
             available_tables = remaining // seats_per_table
             
@@ -149,7 +147,6 @@ async def check_availability(
             "error": f"Time slot {time_slot} is outside operating hours"
         }
     
-    # Get available seating areas
     available_areas = await get_available_seating_areas(
         restaurant_id, date, time_slot, number_of_guests
     )
@@ -157,7 +154,6 @@ async def check_availability(
     seating_config = restaurant.get("seating_config", {})
     total_capacity = seating_config.get("total_capacity", 0)
     
-    # Calculate total booked across all areas
     cursor = Restaurant_db.timeslots.find({
         "restaurantId": restaurant_id,
         "date": date,
@@ -201,7 +197,6 @@ async def get_daily_availability(
     seating_config = restaurant.get("seating_config", {})
     total_capacity = seating_config.get("total_capacity", 0)
     
-    # Get all booked slots for this date
     cursor = Restaurant_db.timeslots.find({
         "restaurantId": restaurant_id,
         "date": date
@@ -247,7 +242,6 @@ async def create_reservation(reservation_data: dict, customer_email: str) -> Opt
     if time_slot not in valid_slots:
         return None
     
-    # Verify seating area availability
     available_areas = await get_available_seating_areas(
         restaurant_id, date, time_slot, guests
     )
@@ -264,7 +258,6 @@ async def create_reservation(reservation_data: dict, customer_email: str) -> Opt
     if not restaurant:
         return None
     
-    # Get seating area name
     seating_config = restaurant.get("seating_config", {})
     seating_areas = seating_config.get("seating_areas", [])
     area_name = next(
@@ -285,13 +278,13 @@ async def create_reservation(reservation_data: dict, customer_email: str) -> Opt
         "seating_area_name": area_name,
         "status": "confirmed",
         "special_requests": reservation_data.get("special_requests"),
+        "checked_in": False,
         "created_at": datetime.utcnow()
     }
     
     result = await Restaurant_db.reservations.insert_one(reservation)
     reservation["_id"] = result.inserted_id
     
-    # Update timeslot for specific seating area
     await Restaurant_db.timeslots.update_one(
         {
             "restaurantId": restaurant_id,
@@ -352,11 +345,14 @@ async def cancel_reservation(reservation_id: str, customer_email: str) -> Dict:
     if reservation["status"] == "cancelled":
         return {"success": False, "error": "Reservation already cancelled"}
     
+    # Check if already checked in
+    if reservation.get("checked_in"):
+        return {"success": False, "error": "Cannot cancel - already checked in"}
+    
     # Check if the reservation time has passed
     reservation_date = reservation["date"]
     reservation_time = reservation["time_slot"]
     
-    # Combine date and time to create datetime object
     reservation_datetime = datetime.strptime(
         f"{reservation_date} {reservation_time}", 
         "%Y-%m-%d %H:%M"
@@ -364,20 +360,17 @@ async def cancel_reservation(reservation_id: str, customer_email: str) -> Dict:
     
     current_datetime = datetime.utcnow()
     
-    # If reservation time has passed, don't allow cancellation
     if current_datetime >= reservation_datetime:
         return {
             "success": False, 
             "error": "Cannot cancel reservation. The reservation time has already passed."
         }
     
-    # Update reservation status
     await Restaurant_db.reservations.update_one(
         {"_id": ObjectId(reservation_id)},
         {"$set": {"status": "cancelled"}}
     )
     
-    # Free up the slot for the specific seating area
     await Restaurant_db.timeslots.update_one(
         {
             "restaurantId": reservation["restaurant_id"],
@@ -406,5 +399,8 @@ def _format_reservation(reservation: Dict) -> Dict:
         "seating_area_name": reservation.get("seating_area_name", ""),
         "status": reservation["status"],
         "special_requests": reservation.get("special_requests"),
+        "checked_in": reservation.get("checked_in", False),
+        "checked_in_at": reservation.get("checked_in_at"),
+        "bill": reservation.get("bill"),
         "created_at": reservation["created_at"]
     }
