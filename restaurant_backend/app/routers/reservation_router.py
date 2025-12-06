@@ -80,6 +80,8 @@ async def get_restaurant_reservations(
             "number_of_guests": res["number_of_guests"],
             "status": res["status"],
             "special_requests": res.get("special_requests"),
+            "checked_in": res.get("checked_in", False),  # ADDED
+            "checked_in_at": res.get("checked_in_at"),    # ADDED
             "created_at": res["created_at"]
         })
     
@@ -114,7 +116,9 @@ async def get_todays_reservations(current_user: dict = Depends(get_current_resta
             "customer_name": res["customer_name"],
             "time_slot": res["time_slot"],
             "number_of_guests": res["number_of_guests"],
-            "status": res["status"]
+            "status": res["status"],
+            "checked_in": res.get("checked_in", False),  # ADDED
+            "checked_in_at": res.get("checked_in_at")    # ADDED
         })
     
     return {
@@ -158,6 +162,8 @@ async def get_reservation_details(
         "number_of_guests": reservation["number_of_guests"],
         "status": reservation["status"],
         "special_requests": reservation.get("special_requests"),
+        "checked_in": reservation.get("checked_in", False),  # ADDED
+        "checked_in_at": reservation.get("checked_in_at"),    # ADDED
         "created_at": reservation["created_at"],
         "updated_at": reservation.get("updated_at")
     }

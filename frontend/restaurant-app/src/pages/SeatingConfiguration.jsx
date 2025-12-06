@@ -20,21 +20,66 @@ export default function SeatingConfiguration() {
   useEffect(() => {
     const fetchSeatingConfig = async () => {
       try {
-        const response = await fetch('/api/restaurant/seating-config', {
+        // Get the restaurant token from localStorage
+        const token = localStorage.getItem('restaurant_token');
+        
+        if (!token) {
+          console.error('No auth token found');
+          alert('Authentication required. Please log in again.');
+          navigate('/login');
+          return;
+        }
+
+        const response = await fetch('http://localhost:8001/api/restaurant/seating-config', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            // Add your auth token here if needed
-            // 'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
         if (response.ok) {
           const data = await response.json();
-          if (data && data.areas && data.areas.length > 0) {
-            setSeatingConfig(data);
+          console.log('Fetched seating config:', data);
+          
+          // Transform backend structure to frontend structure
+          if (data.seating_areas && data.seating_areas.length > 0) {
+            // Group by area_type to combine tables
+            const areasMap = new Map();
+            
+            data.seating_areas.forEach((area, index) => {
+              const areaName = area.area_type || area.area_name;
+              
+              if (!areasMap.has(areaName)) {
+                areasMap.set(areaName, {
+                  id: Date.now() + index,
+                  name: areaName,
+                  tables: []
+                });
+              }
+              
+              // Add table configuration to this area
+              areasMap.get(areaName).tables.push({
+                id: Date.now() + index + 1000,
+                capacity: area.seats_per_table,
+                quantity: area.number_of_tables
+              });
+            });
+            
+            setSeatingConfig({
+              areas: Array.from(areasMap.values())
+            });
             setEditMode(false);
+          } else {
+            // Keep default empty config if no areas exist
+            setSeatingConfig({
+              areas: [
+                { id: 1, name: 'Indoor Dining', tables: [] }
+              ]
+            });
           }
+        } else {
+          console.error('Failed to fetch seating config:', response.status);
         }
       } catch (err) {
         console.error('Failed to fetch seating config:', err);
@@ -139,18 +184,44 @@ export default function SeatingConfiguration() {
     setLoading(true);
     
     try {
-      const response = await fetch('/api/restaurant/seating-config', {
+      // Get the restaurant token from localStorage
+      const token = localStorage.getItem('restaurant_token');
+      
+      if (!token) {
+        alert('Authentication required. Please log in again.');
+        navigate('/login');
+        setLoading(false);
+        return;
+      }
+
+      // Transform frontend structure to backend structure
+      // Backend expects: seating_areas: [{ area_type, area_name, seats_per_table, number_of_tables }]
+      const backendPayload = {
+        seating_areas: seatingConfig.areas.flatMap(area => {
+          // For each area, create separate entries for each table configuration
+          return area.tables.map(table => ({
+            area_type: area.name,
+            area_name: area.name,
+            seats_per_table: table.capacity,
+            number_of_tables: table.quantity
+          }));
+        })
+      };
+
+      console.log('Sending payload to backend:', backendPayload);
+      
+      const response = await fetch('http://localhost:8001/api/restaurant/seating-config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          // Add your auth token here if needed
-          // 'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(seatingConfig)
+        body: JSON.stringify(backendPayload)
       });
       
       if (!response.ok) {
-        throw new Error('Failed to save seating configuration');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to save seating configuration');
       }
       
       const data = await response.json();
@@ -162,7 +233,7 @@ export default function SeatingConfiguration() {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error('Save error:', err);
-      alert('Failed to save seating configuration. Please try again.');
+      alert(`Failed to save seating configuration: ${err.message}`);
     } finally {
       setLoading(false);
     }
