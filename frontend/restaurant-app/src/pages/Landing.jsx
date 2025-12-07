@@ -12,7 +12,7 @@ import {
   Play,
   X,
 } from "lucide-react";
-import authSideImage from "./assets/auth-side.png";
+import authSideImage from "../assets/auth-side.png";
 
 export default function Landing() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
