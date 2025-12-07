@@ -1,6 +1,12 @@
 import axios from "axios";
 
+// Debug: Log what API_URL is being used
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8001/api";
+console.log("🔍 API Configuration:", {
+  API_URL,
+  fromEnv: process.env.REACT_APP_API_URL,
+  fallback: "http://localhost:8001/api",
+});
 
 const api = axios.create({
   baseURL: API_URL,
@@ -15,11 +21,12 @@ export async function restaurantSignup(payload) {
 export async function restaurantLogin(credentials) {
   const { data } = await api.post("/restaurant/login", credentials);
 
+  // Only store token if it exists
   if (data.access_token) {
     localStorage.setItem("restaurant_token", data.access_token);
   } else {
-    localStorage.setItem("restaurant_token", "logged_in");
-    localStorage.setItem("restaurant_email", credentials.email);
+    console.error("⚠️ No access_token received from server");
+    throw new Error("Authentication failed - no token received");
   }
 
   return data;
@@ -67,20 +74,47 @@ export async function completeOnboarding(formData) {
   return data;
 }
 
-// FIXED: Removed duplicate /api from the URL
 export async function getTodayReservations() {
   const token = localStorage.getItem("restaurant_token");
 
-  const { data } = await axios.get(
-    `${API_URL}/restaurant/reservations/today`, // Fixed: removed /api
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  // Debug logging
+  console.log("📍 getTodayReservations called");
+  console.log("🔑 Token exists:", !!token);
+  console.log("🌐 API_URL:", API_URL);
+  console.log("🎯 Full URL:", `${API_URL}/restaurant/reservations/today`);
 
-  return data;
+  if (!token) {
+    console.error("❌ No token found in localStorage");
+    throw new Error("Not authenticated");
+  }
+
+  // Log first 20 chars of token for debugging (not the full token for security)
+  console.log("🔑 Token preview:", token.substring(0, 20) + "...");
+
+  try {
+    console.log("📡 Making API request...");
+    const { data } = await axios.get(
+      `${API_URL}/restaurant/reservations/today`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log("✅ Success! Data received:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ API Error Details:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url,
+      headers: error.config?.headers,
+      message: error.message,
+    });
+    throw error;
+  }
 }
 
 export async function getRestaurantProfile() {
