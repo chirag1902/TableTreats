@@ -12,17 +12,17 @@ app = FastAPI(title="TableTreats Restaurant API")
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev servers
+    allow_origins=["*"],  # React dev servers
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Create uploads directory if it doesn't exist
-os.makedirs("uploads/restaurants", exist_ok=True)
+# # Create uploads directory if it doesn't exist
+# os.makedirs("uploads/restaurants", exist_ok=True)
 
-# Serve static files (uploaded images)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# # Serve static files (uploaded images)
+# app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
 app.include_router(restaurant_router.router, prefix="/api", tags=["Restaurant"])
