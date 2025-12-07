@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "localhost:8000",
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:8000",
   headers: {
     "Content-Type": "application/json",
   },
@@ -12,23 +12,16 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle 401 errors (unauthorized)
     if (error.response && error.response.status === 401) {
-      // Clear auth and trigger logout event
       delete api.defaults.headers.common["Authorization"];
-
-      // Dispatch custom event for components to listen to
       window.dispatchEvent(new CustomEvent("auth:logout"));
     }
-
-    // Return error in consistent format
     return Promise.reject(error.response?.data || { message: error.message });
   }
 );
 
 // ==================== RESERVATION API FUNCTIONS ====================
 
-// Helper to set customer auth token
 const setCustomerAuthToken = () => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -36,7 +29,6 @@ const setCustomerAuthToken = () => {
   }
 };
 
-// Get restaurant hours for a specific date
 export const getRestaurantHours = async (restaurantId, date) => {
   try {
     const response = await api.get(
@@ -49,7 +41,6 @@ export const getRestaurantHours = async (restaurantId, date) => {
   }
 };
 
-// Check availability for a specific time slot with seating areas
 export const checkAvailability = async (
   restaurantId,
   date,
@@ -70,7 +61,6 @@ export const checkAvailability = async (
   }
 };
 
-// Get daily availability for all time slots
 export const getDailyAvailability = async (restaurantId, date) => {
   try {
     const response = await api.get(
@@ -83,7 +73,6 @@ export const getDailyAvailability = async (restaurantId, date) => {
   }
 };
 
-// Create a new reservation (customer-facing) - AUTO APPROVED
 export const createReservation = async (reservationData) => {
   try {
     setCustomerAuthToken();
@@ -95,7 +84,6 @@ export const createReservation = async (reservationData) => {
   }
 };
 
-// Get customer's reservations
 export const getMyReservations = async () => {
   try {
     setCustomerAuthToken();
@@ -107,7 +95,6 @@ export const getMyReservations = async () => {
   }
 };
 
-// Get single reservation by ID
 export const getReservationById = async (reservationId) => {
   try {
     setCustomerAuthToken();
@@ -119,7 +106,6 @@ export const getReservationById = async (reservationId) => {
   }
 };
 
-// Cancel reservation
 export const cancelReservation = async (reservationId) => {
   try {
     setCustomerAuthToken();
@@ -127,6 +113,30 @@ export const cancelReservation = async (reservationId) => {
     return response.data;
   } catch (error) {
     console.error("Error canceling reservation:", error);
+    throw error;
+  }
+};
+
+// ==================== BILL API FUNCTIONS ====================
+
+export const getBill = async (reservationId) => {
+  try {
+    setCustomerAuthToken();
+    const response = await api.get(`/api/reservations/${reservationId}/bill`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching bill:", error);
+    throw error;
+  }
+};
+
+export const payBill = async (reservationId) => {
+  try {
+    setCustomerAuthToken();
+    const response = await api.post(`/api/reservations/${reservationId}/pay`);
+    return response.data;
+  } catch (error) {
+    console.error("Error paying bill:", error);
     throw error;
   }
 };

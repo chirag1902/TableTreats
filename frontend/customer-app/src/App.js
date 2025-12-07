@@ -10,7 +10,8 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import RestaurantDetails from "./pages/RestaurantDetails";
 import MyReservations from "./pages/MyReservations";
-import Profile from "./pages/Profile"; // ADD THIS IMPORT
+import Profile from "./pages/Profile";
+import BillPage from "./pages/BillPage"; // NEW IMPORT
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 
@@ -111,12 +112,21 @@ function App() {
           }
         />
 
-        {/* ADD THIS NEW PROFILE ROUTE */}
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* NEW BILL ROUTE */}
+        <Route
+          path="/bill/:reservationId"
+          element={
+            <ProtectedRoute>
+              <BillPage />
             </ProtectedRoute>
           }
         />
