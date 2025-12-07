@@ -1,11 +1,10 @@
 import axios from "axios";
 
-// Debug: Log what API_URL is being used
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8001/api";
+// Hardcoded API URL for production
+const API_URL = "https://tabletreats-restaurantapp.onrender.com/api";
+
 console.log("🔍 API Configuration:", {
   API_URL,
-  fromEnv: process.env.REACT_APP_API_URL,
-  fallback: "http://localhost:8001/api",
 });
 
 const api = axios.create({
