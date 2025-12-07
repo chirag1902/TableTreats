@@ -230,15 +230,15 @@ async def get_restaurant_profile(current_user: dict = Depends(get_current_restau
     # Build URLs for images stored in GridFS
     thumbnail_url = None
     if restaurant.get("thumbnail_id"):
-        thumbnail_url = f"http://localhost:8001/api/restaurant/image/{restaurant['thumbnail_id']}"
+        thumbnail_url = f"https://tabletreats-restaurantapp.onrender.com/api/restaurant/image/{restaurant['thumbnail_id']}"
     
     ambiance_urls = []
     for photo_id in restaurant.get("ambiance_photo_ids", []):
-        ambiance_urls.append(f"http://localhost:8001/api/restaurant/image/{photo_id}")
+        ambiance_urls.append(f"https://tabletreats-restaurantapp.onrender.com/api/restaurant/image/{photo_id}")
     
     menu_urls = []
     for photo_id in restaurant.get("menu_photo_ids", []):
-        menu_urls.append(f"http://localhost:8001/api/restaurant/image/{photo_id}")
+        menu_urls.append(f"https://tabletreats-restaurantapp.onrender.com/api/restaurant/image/{photo_id}")
     
     # Return full profile
     return {

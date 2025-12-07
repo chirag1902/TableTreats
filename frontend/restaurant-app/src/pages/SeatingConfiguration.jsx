@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Plus, X, Users, Armchair, Save, Edit2, 
-  Check, AlertCircle, ChevronRight, Home
-} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Plus,
+  X,
+  Users,
+  Armchair,
+  Save,
+  Edit2,
+  Check,
+  AlertCircle,
+  ChevronRight,
+  Home,
+} from "lucide-react";
 
 export default function SeatingConfiguration() {
-  const navigate = useNavigate();  
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [seatingConfig, setSeatingConfig] = useState({
-    areas: [
-      { id: 1, name: 'Indoor Dining', tables: [] }
-    ]
+    areas: [{ id: 1, name: "Indoor Dining", tables: [] }],
   });
 
   // Fetch existing seating configuration from database
@@ -21,108 +27,109 @@ export default function SeatingConfiguration() {
     const fetchSeatingConfig = async () => {
       try {
         // Get the restaurant token from localStorage
-        const token = localStorage.getItem('restaurant_token');
-        
+        const token = localStorage.getItem("restaurant_token");
+
         if (!token) {
-          console.error('No auth token found');
-          alert('Authentication required. Please log in again.');
-          navigate('/login');
+          console.error("No auth token found");
+          alert("Authentication required. Please log in again.");
+          navigate("/login");
           return;
         }
 
-        const response = await fetch('http://localhost:8001/api/restaurant/seating-config', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+        const response = await fetch(
+          "https://tabletreats-restaurantapp.onrender.com/api/restaurant/seating-config",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           }
-        });
-        
+        );
+
         if (response.ok) {
           const data = await response.json();
-          console.log('Fetched seating config:', data);
-          
+          console.log("Fetched seating config:", data);
+
           // Transform backend structure to frontend structure
           if (data.seating_areas && data.seating_areas.length > 0) {
             // Group by area_type to combine tables
             const areasMap = new Map();
-            
+
             data.seating_areas.forEach((area, index) => {
               const areaName = area.area_type || area.area_name;
-              
+
               if (!areasMap.has(areaName)) {
                 areasMap.set(areaName, {
                   id: Date.now() + index,
                   name: areaName,
-                  tables: []
+                  tables: [],
                 });
               }
-              
+
               // Add table configuration to this area
               areasMap.get(areaName).tables.push({
                 id: Date.now() + index + 1000,
                 capacity: area.seats_per_table,
-                quantity: area.number_of_tables
+                quantity: area.number_of_tables,
               });
             });
-            
+
             setSeatingConfig({
-              areas: Array.from(areasMap.values())
+              areas: Array.from(areasMap.values()),
             });
             setEditMode(false);
           } else {
             // Keep default empty config if no areas exist
             setSeatingConfig({
-              areas: [
-                { id: 1, name: 'Indoor Dining', tables: [] }
-              ]
+              areas: [{ id: 1, name: "Indoor Dining", tables: [] }],
             });
           }
         } else {
-          console.error('Failed to fetch seating config:', response.status);
+          console.error("Failed to fetch seating config:", response.status);
         }
       } catch (err) {
-        console.error('Failed to fetch seating config:', err);
+        console.error("Failed to fetch seating config:", err);
         // Keep default empty config if fetch fails
       }
     };
-    
+
     fetchSeatingConfig();
   }, []);
 
   const areaTypes = [
-    'Indoor Dining',
-    'Outdoor Patio',
-    'Bar Area',
-    'Private Room',
-    'Lounge',
-    'Rooftop',
-    'Terrace',
-    'Garden'
+    "Indoor Dining",
+    "Outdoor Patio",
+    "Bar Area",
+    "Private Room",
+    "Lounge",
+    "Rooftop",
+    "Terrace",
+    "Garden",
   ];
 
   const addArea = () => {
     const newArea = {
       id: Date.now(),
       name: areaTypes[0],
-      tables: []
+      tables: [],
     };
     setSeatingConfig({
-      areas: [...seatingConfig.areas, newArea]
+      areas: [...seatingConfig.areas, newArea],
     });
   };
 
   const removeArea = (areaId) => {
     setSeatingConfig({
-      areas: seatingConfig.areas.filter(a => a.id !== areaId)
+      areas: seatingConfig.areas.filter((a) => a.id !== areaId),
     });
   };
 
   const updateAreaName = (areaId, newName) => {
     setSeatingConfig({
-      areas: seatingConfig.areas.map(area =>
+      areas: seatingConfig.areas.map((area) =>
         area.id === areaId ? { ...area, name: newName } : area
-      )
+      ),
     });
   };
 
@@ -130,66 +137,71 @@ export default function SeatingConfiguration() {
     const newTable = {
       id: Date.now(),
       capacity: 2,
-      quantity: 1
+      quantity: 1,
     };
     setSeatingConfig({
-      areas: seatingConfig.areas.map(area =>
+      areas: seatingConfig.areas.map((area) =>
         area.id === areaId
           ? { ...area, tables: [...area.tables, newTable] }
           : area
-      )
+      ),
     });
   };
 
   const removeTable = (areaId, tableId) => {
     setSeatingConfig({
-      areas: seatingConfig.areas.map(area =>
+      areas: seatingConfig.areas.map((area) =>
         area.id === areaId
-          ? { ...area, tables: area.tables.filter(t => t.id !== tableId) }
+          ? { ...area, tables: area.tables.filter((t) => t.id !== tableId) }
           : area
-      )
+      ),
     });
   };
 
   const updateTable = (areaId, tableId, field, value) => {
     setSeatingConfig({
-      areas: seatingConfig.areas.map(area =>
+      areas: seatingConfig.areas.map((area) =>
         area.id === areaId
           ? {
               ...area,
-              tables: area.tables.map(table =>
-                table.id === tableId ? { ...table, [field]: parseInt(value) || 0 } : table
-              )
+              tables: area.tables.map((table) =>
+                table.id === tableId
+                  ? { ...table, [field]: parseInt(value) || 0 }
+                  : table
+              ),
             }
           : area
-      )
+      ),
     });
   };
 
   const getTotalSeats = () => {
     return seatingConfig.areas.reduce((total, area) => {
-      return total + area.tables.reduce((areaTotal, table) => {
-        return areaTotal + (table.capacity * table.quantity);
-      }, 0);
+      return (
+        total +
+        area.tables.reduce((areaTotal, table) => {
+          return areaTotal + table.capacity * table.quantity;
+        }, 0)
+      );
     }, 0);
   };
 
   const getAreaSeats = (area) => {
     return area.tables.reduce((total, table) => {
-      return total + (table.capacity * table.quantity);
+      return total + table.capacity * table.quantity;
     }, 0);
   };
 
   const handleSave = async () => {
     setLoading(true);
-    
+
     try {
       // Get the restaurant token from localStorage
-      const token = localStorage.getItem('restaurant_token');
-      
+      const token = localStorage.getItem("restaurant_token");
+
       if (!token) {
-        alert('Authentication required. Please log in again.');
-        navigate('/login');
+        alert("Authentication required. Please log in again.");
+        navigate("/login");
         setLoading(false);
         return;
       }
@@ -197,42 +209,47 @@ export default function SeatingConfiguration() {
       // Transform frontend structure to backend structure
       // Backend expects: seating_areas: [{ area_type, area_name, seats_per_table, number_of_tables }]
       const backendPayload = {
-        seating_areas: seatingConfig.areas.flatMap(area => {
+        seating_areas: seatingConfig.areas.flatMap((area) => {
           // For each area, create separate entries for each table configuration
-          return area.tables.map(table => ({
+          return area.tables.map((table) => ({
             area_type: area.name,
             area_name: area.name,
             seats_per_table: table.capacity,
-            number_of_tables: table.quantity
+            number_of_tables: table.quantity,
           }));
-        })
+        }),
       };
 
-      console.log('Sending payload to backend:', backendPayload);
-      
-      const response = await fetch('http://localhost:8001/api/restaurant/seating-config', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(backendPayload)
-      });
-      
+      console.log("Sending payload to backend:", backendPayload);
+
+      const response = await fetch(
+        "https://tabletreats-restaurantapp.onrender.com/api/restaurant/seating-config",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(backendPayload),
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Failed to save seating configuration');
+        throw new Error(
+          errorData.detail || "Failed to save seating configuration"
+        );
       }
-      
+
       const data = await response.json();
-      console.log('Seating config saved successfully:', data);
-      
+      console.log("Seating config saved successfully:", data);
+
       setSaveSuccess(true);
       setEditMode(false);
-      
+
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      console.error('Save error:', err);
+      console.error("Save error:", err);
       alert(`Failed to save seating configuration: ${err.message}`);
     } finally {
       setLoading(false);
@@ -251,26 +268,29 @@ export default function SeatingConfiguration() {
               </div>
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <button 
-                    onClick={() => navigate('/dashboard')}
+                  <button
+                    onClick={() => navigate("/dashboard")}
                     className="hover:text-pink-600 transition-colors"
                   >
                     Dashboard
-                   </button>
+                  </button>
                   <ChevronRight className="w-4 h-4" />
-                  <span className="text-gray-900 font-semibold">Seating Configuration</span>
+                  <span className="text-gray-900 font-semibold">
+                    Seating Configuration
+                  </span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">Chipotle - New Brunswick</h1>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Chipotle - New Brunswick
+                </h1>
               </div>
             </div>
-            <button 
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-             >
-                <Home className="w-4 h-4" />
-                Back to Dashboard
-             </button>
-            
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              Back to Dashboard
+            </button>
           </div>
         </div>
       </div>
@@ -280,7 +300,9 @@ export default function SeatingConfiguration() {
         {saveSuccess && (
           <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-xl flex items-center gap-3 text-green-700">
             <Check className="w-5 h-5" />
-            <span className="font-semibold">Seating configuration saved successfully!</span>
+            <span className="font-semibold">
+              Seating configuration saved successfully!
+            </span>
           </div>
         )}
 
@@ -288,13 +310,18 @@ export default function SeatingConfiguration() {
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Seating Configuration</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Seating Configuration
+              </h2>
               <p className="text-gray-600">
-                Configure your restaurant's seating areas and table arrangements for reservations
+                Configure your restaurant's seating areas and table arrangements
+                for reservations
               </p>
             </div>
             <div className="text-center">
-              <div className="text-sm text-gray-600 mb-1">Total Available Seats</div>
+              <div className="text-sm text-gray-600 mb-1">
+                Total Available Seats
+              </div>
               <div className="text-5xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
                 {getTotalSeats()}
               </div>
@@ -319,7 +346,7 @@ export default function SeatingConfiguration() {
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-5 h-5" />
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? "Saving..." : "Save Changes"}
               </button>
               <button
                 onClick={() => setEditMode(false)}
@@ -336,11 +363,15 @@ export default function SeatingConfiguration() {
         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-blue-900">
-            <div className="font-semibold mb-1">How Seating Configuration Works</div>
+            <div className="font-semibold mb-1">
+              How Seating Configuration Works
+            </div>
             <p className="text-blue-700">
-              Define your seating areas (Indoor, Outdoor, Bar, etc.) and specify the number and capacity of tables in each area. 
-              This helps customers see available seats when making reservations. For example: "Indoor Dining" with 5 tables 
-              that seat 4 people each = 20 total seats available for booking in that area.
+              Define your seating areas (Indoor, Outdoor, Bar, etc.) and specify
+              the number and capacity of tables in each area. This helps
+              customers see available seats when making reservations. For
+              example: "Indoor Dining" with 5 tables that seat 4 people each =
+              20 total seats available for booking in that area.
             </p>
           </div>
         </div>
@@ -348,7 +379,10 @@ export default function SeatingConfiguration() {
         {/* Seating Areas */}
         <div className="space-y-6">
           {seatingConfig.areas.map((area, areaIndex) => (
-            <div key={area.id} className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div
+              key={area.id}
+              className="bg-white rounded-2xl shadow-lg overflow-hidden"
+            >
               {/* Area Header */}
               <div className="bg-gradient-to-r from-pink-50 to-purple-50 p-6 border-b-2 border-gray-100">
                 <div className="flex items-center justify-between">
@@ -357,19 +391,27 @@ export default function SeatingConfiguration() {
                     {editMode ? (
                       <select
                         value={area.name}
-                        onChange={(e) => updateAreaName(area.id, e.target.value)}
+                        onChange={(e) =>
+                          updateAreaName(area.id, e.target.value)
+                        }
                         className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-pink-500 font-semibold text-gray-900 text-lg"
                       >
-                        {areaTypes.map(type => (
-                          <option key={type} value={type}>{type}</option>
+                        {areaTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
                         ))}
                       </select>
                     ) : (
-                      <h3 className="text-xl font-bold text-gray-900">{area.name}</h3>
+                      <h3 className="text-xl font-bold text-gray-900">
+                        {area.name}
+                      </h3>
                     )}
                     <div className="ml-auto text-right">
                       <div className="text-sm text-gray-600">Area Capacity</div>
-                      <div className="text-2xl font-bold text-gray-900">{getAreaSeats(area)} seats</div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {getAreaSeats(area)} seats
+                      </div>
                     </div>
                   </div>
                   {editMode && seatingConfig.areas.length > 1 && (
@@ -402,37 +444,62 @@ export default function SeatingConfiguration() {
                 ) : (
                   <div className="space-y-3">
                     {area.tables.map((table, tableIndex) => (
-                      <div key={table.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+                      <div
+                        key={table.id}
+                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border-2 border-gray-200"
+                      >
                         <Users className="w-5 h-5 text-gray-400" />
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600 font-medium">Seats per table</span>
+                          <span className="text-sm text-gray-600 font-medium">
+                            Seats per table
+                          </span>
                           {editMode ? (
                             <input
                               type="number"
                               min="1"
                               max="20"
                               value={table.capacity}
-                              onChange={(e) => updateTable(area.id, table.id, 'capacity', e.target.value)}
+                              onChange={(e) =>
+                                updateTable(
+                                  area.id,
+                                  table.id,
+                                  "capacity",
+                                  e.target.value
+                                )
+                              }
                               className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center font-semibold focus:outline-none focus:border-pink-500"
                             />
                           ) : (
-                            <span className="text-lg font-bold text-gray-900">{table.capacity}</span>
+                            <span className="text-lg font-bold text-gray-900">
+                              {table.capacity}
+                            </span>
                           )}
                         </div>
                         <X className="text-gray-400 font-bold" />
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600 font-medium">Number of tables</span>
+                          <span className="text-sm text-gray-600 font-medium">
+                            Number of tables
+                          </span>
                           {editMode ? (
                             <input
                               type="number"
                               min="1"
                               max="50"
                               value={table.quantity}
-                              onChange={(e) => updateTable(area.id, table.id, 'quantity', e.target.value)}
+                              onChange={(e) =>
+                                updateTable(
+                                  area.id,
+                                  table.id,
+                                  "quantity",
+                                  e.target.value
+                                )
+                              }
                               className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center font-semibold focus:outline-none focus:border-pink-500"
                             />
                           ) : (
-                            <span className="text-lg font-bold text-gray-900">{table.quantity}</span>
+                            <span className="text-lg font-bold text-gray-900">
+                              {table.quantity}
+                            </span>
                           )}
                         </div>
                         <div className="ml-auto flex items-center gap-4">
