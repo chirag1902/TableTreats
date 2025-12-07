@@ -246,7 +246,7 @@ async def _format_restaurant_summary(restaurant: Dict) -> Dict:
     """Format restaurant data for list view"""
     thumbnail_url = None
     if restaurant.get("thumbnail_id"):
-        thumbnail_url = f"http://localhost:8000/restaurant/image/{restaurant['thumbnail_id']}"
+        thumbnail_url = f"https://tabletreats.onrender.com/restaurant/image/{restaurant['thumbnail_id']}"
     
     # Get active deals using the deal_service
     restaurant_id = str(restaurant["_id"])
@@ -273,15 +273,15 @@ def _format_restaurant_details(restaurant: Dict) -> Dict:
     """Format restaurant data for detail view"""
     thumbnail_url = None
     if restaurant.get("thumbnail_id"):
-        thumbnail_url = f"http://localhost:8000/restaurant/image/{restaurant['thumbnail_id']}"
+        thumbnail_url = f"https://tabletreats.onrender.com/restaurant/image/{restaurant['thumbnail_id']}"
     
     ambiance_urls = []
     for photo_id in restaurant.get("ambiance_photo_ids", []):
-        ambiance_urls.append(f"http://localhost:8000/restaurant/image/{photo_id}")
+        ambiance_urls.append(f"https://tabletreats.onrender.com/restaurant/image/{photo_id}")
     
     menu_urls = []
     for photo_id in restaurant.get("menu_photo_ids", []):
-        menu_urls.append(f"http://localhost:8000/restaurant/image/{photo_id}")
+        menu_urls.append(f"https://tabletreats.onrender.com/restaurant/image/{photo_id}")
     
     return {
         "id": str(restaurant["_id"]),

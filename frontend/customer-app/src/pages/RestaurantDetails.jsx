@@ -123,7 +123,7 @@ export default function RestaurantDetails() {
 
       // ✅ Updated URL - now using /api/restaurants instead of /api/customers/restaurants
       const response = await axios.get(
-        `http://localhost:8000/api/restaurants/${id}/deals`
+        `https://tabletreats.onrender.com/api/restaurants/${id}/deals`
       );
 
       console.log("Deals response:", response.data);
