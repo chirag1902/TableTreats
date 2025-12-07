@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
   Users,
@@ -15,6 +16,7 @@ import {
 import authSideImage from "../assets/auth-side.png";
 
 export default function Landing() {
+  const navigate = useNavigate();
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const featuresRef = useRef(null);
   const howItWorksRef = useRef(null);
@@ -50,7 +52,7 @@ export default function Landing() {
               How It Works
             </button>
             <button
-              onClick={() => (window.location.href = "/signin")}
+              onClick={() => navigate("/signin")}
               className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
             >
               Sign In
@@ -85,7 +87,7 @@ export default function Landing() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => (window.location.href = "/signin")}
+              onClick={() => navigate("/signin")}
               className="px-8 py-3 bg-white text-purple-600 font-bold rounded-lg hover:shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center gap-2 group"
             >
               Sign In{" "}
@@ -246,7 +248,7 @@ export default function Landing() {
             Start your free trial today.
           </p>
           <button
-            onClick={() => (window.location.href = "/signin")}
+            onClick={() => navigate("/signup")}
             className="px-10 py-4 bg-white text-purple-600 font-bold rounded-lg hover:shadow-2xl transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-2 mx-auto group"
           >
             Get Started Now{" "}
@@ -274,9 +276,12 @@ export default function Landing() {
               <h4 className="text-white font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="#" className="hover:text-white transition">
+                  <button
+                    onClick={() => scrollTo(featuresRef)}
+                    className="hover:text-white transition"
+                  >
                     Features
-                  </a>
+                  </button>
                 </li>
                 <li>
                   <a href="#" className="hover:text-white transition">
