@@ -99,6 +99,13 @@ export default function PaymentReceipt() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  const formatMongoDate = (dateObj) => {
+    if (!dateObj) return "";
+    // Handle MongoDB date format: { "$date": "..." } or plain ISO string
+    const dateString = dateObj.$date || dateObj;
+    return new Date(dateString).toLocaleString();
+  };
+
   const getDealDisplayText = (dealApplied) => {
     if (!dealApplied) return null;
     if (typeof dealApplied === "string") return dealApplied;
@@ -191,8 +198,7 @@ export default function PaymentReceipt() {
             <h2 className="text-2xl font-bold">Payment Successful</h2>
           </div>
           <p className="text-center text-green-100">
-            Transaction completed on{" "}
-            {new Date(receipt.bill.paid_at).toLocaleString()}
+            Transaction completed on {formatMongoDate(receipt.bill.paid_at)}
           </p>
         </div>
 
@@ -294,7 +300,8 @@ export default function PaymentReceipt() {
                         {item.dish_name}
                       </h5>
                       <p className="text-sm text-gray-500">
-                        ${item.unit_price.toFixed(2)} × {item.quantity}
+                        ${Number(item.unit_price || 0).toFixed(2)} ×{" "}
+                        {item.quantity}
                       </p>
                       {dealText && (
                         <div className="flex items-center gap-1 mt-1">
@@ -306,18 +313,19 @@ export default function PaymentReceipt() {
                       )}
                       {item.discount_amount > 0 && (
                         <p className="text-xs text-green-600 mt-1">
-                          Discount: -${item.discount_amount.toFixed(2)}
+                          Discount: -$
+                          {Number(item.discount_amount || 0).toFixed(2)}
                         </p>
                       )}
                     </div>
                     <div className="text-right ml-4">
                       {item.discount_amount > 0 && (
                         <p className="text-sm text-gray-400 line-through">
-                          ${item.subtotal.toFixed(2)}
+                          ${Number(item.subtotal || 0).toFixed(2)}
                         </p>
                       )}
                       <p className="font-semibold text-gray-900">
-                        ${item.final_amount.toFixed(2)}
+                        ${Number(item.final_amount || 0).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -331,23 +339,27 @@ export default function PaymentReceipt() {
             <div className="space-y-3">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>${receipt.bill.subtotal.toFixed(2)}</span>
+                <span>${Number(receipt.bill.subtotal || 0).toFixed(2)}</span>
               </div>
               {receipt.bill.discount_total > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Total Discounts</span>
-                  <span>-${receipt.bill.discount_total.toFixed(2)}</span>
+                  <span>
+                    -${Number(receipt.bill.discount_total || 0).toFixed(2)}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between text-gray-600">
-                <span>Tax ({receipt.bill.tax_rate}%)</span>
-                <span>${receipt.bill.tax_amount.toFixed(2)}</span>
+                <span>
+                  Tax ({Number(receipt.bill.tax_rate || 0).toFixed(1)}%)
+                </span>
+                <span>${Number(receipt.bill.tax_amount || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-2xl font-bold text-gray-900 pt-3 border-t-2">
                 <span>Total Paid</span>
                 <span className="flex items-center gap-1">
                   <DollarSign className="w-6 h-6" />
-                  {receipt.bill.total.toFixed(2)}
+                  {Number(receipt.bill.total || 0).toFixed(2)}
                 </span>
               </div>
             </div>

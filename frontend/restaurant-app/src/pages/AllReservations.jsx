@@ -420,14 +420,19 @@ export default function AllReservations() {
                               <span className="font-semibold">
                                 Amount Paid:
                               </span>{" "}
-                              ${reservation.bill.total.toFixed(2)}
-                              {" • "}
-                              <span className="font-semibold">
-                                Paid at:
-                              </span>{" "}
-                              {new Date(
-                                reservation.bill.paid_at
-                              ).toLocaleString()}
+                              ${Number(reservation.bill.total || 0).toFixed(2)}
+                              {reservation.bill.paid_at && (
+                                <>
+                                  {" • "}
+                                  <span className="font-semibold">
+                                    Paid at:
+                                  </span>{" "}
+                                  {new Date(
+                                    reservation.bill.paid_at.$date ||
+                                      reservation.bill.paid_at
+                                  ).toLocaleString()}
+                                </>
+                              )}
                             </p>
                           </div>
                         )}
