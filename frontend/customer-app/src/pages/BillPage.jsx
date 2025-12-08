@@ -39,7 +39,7 @@ export default function BillPage() {
       }
 
       // Get auth token from localStorage
-      const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("Please log in to view your bill");
       }
@@ -111,7 +111,7 @@ export default function BillPage() {
 
     try {
       // Get auth token
-      const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("Please log in to make payment");
       }
