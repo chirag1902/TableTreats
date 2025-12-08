@@ -27,9 +27,10 @@ export default function BillManagement() {
   const [taxRate, setTaxRate] = useState(8.5);
   const [notes, setNotes] = useState("");
 
-  // NEW: Track existing bill state
+  // Track existing bill state
   const [existingBill, setExistingBill] = useState(null);
   const [billExists, setBillExists] = useState(false);
+  const [isEditingExistingBill, setIsEditingExistingBill] = useState(false);
 
   const [manualItemForm, setManualItemForm] = useState({
     dish_name: "",
@@ -124,7 +125,7 @@ export default function BillManagement() {
     }
   };
 
-  // NEW: Fetch existing bill for a reservation
+  // Fetch existing bill for a reservation
   const fetchExistingBill = async (reservationId) => {
     try {
       const token = getToken();
@@ -354,7 +355,7 @@ export default function BillManagement() {
 
         setTimeout(() => setSuccess(""), 5000);
       } else {
-        // NEW: Check if error is "bill already exists"
+        // Check if error is "bill already exists"
         if (
           responseData.detail &&
           responseData.detail.includes("already exists")
@@ -414,7 +415,7 @@ export default function BillManagement() {
           </div>
         )}
 
-        {/* NEW: Show existing bill notification */}
+        {/* Show existing bill notification */}
         {billExists && existingBill && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -668,8 +669,8 @@ export default function BillManagement() {
 
                         {discount > 0 && promo && (
                           <div className="text-sm text-green-600 font-semibold mb-2 flex items-center gap-1">
-                            <Gift className="w-3 h-3" />-{promo.title}: $$
-                            {discount.toFixed(2)}
+                            <Gift className="w-3 h-3" />
+                            {promo.title}: -${discount.toFixed(2)}
                           </div>
                         )}
 
