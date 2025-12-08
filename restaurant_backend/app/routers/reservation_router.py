@@ -665,9 +665,10 @@ async def get_bill(
         "total": bill["total"],
         "notes": bill.get("notes"),
         "created_at": bill["created_at"],
-        "updated_at": bill.get("updated_at")
+        "updated_at": bill.get("updated_at"),
+        "paid": bill.get("paid", False),           # ADDED
+        "paid_at": bill.get("paid_at")             # ADDED
     }
-
 
 @router.put("/restaurant/bills/{reservation_id}")
 async def update_bill(
