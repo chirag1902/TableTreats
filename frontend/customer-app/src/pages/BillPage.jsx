@@ -131,6 +131,22 @@ export default function BillPage() {
     window.location.href = "/reservations";
   };
 
+  // Helper function to get deal display text
+  const getDealDisplayText = (dealApplied) => {
+    if (!dealApplied) return null;
+
+    // If it's already a string, return it
+    if (typeof dealApplied === "string") return dealApplied;
+
+    // If it's an object, format it nicely
+    if (typeof dealApplied === "object") {
+      const { deal_name, deal_type, discount_value } = dealApplied;
+      return deal_name || `${deal_type}: $${discount_value}`;
+    }
+
+    return null;
+  };
+
   // Loading State
   if (loading) {
     return (
@@ -299,44 +315,48 @@ export default function BillPage() {
             {/* Items */}
             {bill.items.length > 0 ? (
               <div className="space-y-4 mb-6">
-                {bill.items.map((item, index) => (
-                  <div
-                    key={item.item_id || index}
-                    className="flex items-start justify-between pb-4 border-b last:border-b-0"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
-                        {item.dish_name}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        ${item.unit_price.toFixed(2)} × {item.quantity}
-                      </p>
-                      {item.deal_applied && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Tag className="w-3 h-3 text-green-600" />
-                          <span className="text-xs text-green-600 font-medium">
-                            Deal Applied: {item.deal_applied}
-                          </span>
-                        </div>
-                      )}
-                      {item.discount_amount > 0 && (
-                        <p className="text-xs text-green-600 mt-1">
-                          Discount: -${item.discount_amount.toFixed(2)}
+                {bill.items.map((item, index) => {
+                  const dealText = getDealDisplayText(item.deal_applied);
+
+                  return (
+                    <div
+                      key={item.item_id || index}
+                      className="flex items-start justify-between pb-4 border-b last:border-b-0"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">
+                          {item.dish_name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          ${item.unit_price.toFixed(2)} × {item.quantity}
                         </p>
-                      )}
-                    </div>
-                    <div className="text-right ml-4">
-                      {item.discount_amount > 0 && (
-                        <p className="text-sm text-gray-400 line-through">
-                          ${item.subtotal.toFixed(2)}
+                        {dealText && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Tag className="w-3 h-3 text-green-600" />
+                            <span className="text-xs text-green-600 font-medium">
+                              Deal Applied: {dealText}
+                            </span>
+                          </div>
+                        )}
+                        {item.discount_amount > 0 && (
+                          <p className="text-xs text-green-600 mt-1">
+                            Discount: -${item.discount_amount.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right ml-4">
+                        {item.discount_amount > 0 && (
+                          <p className="text-sm text-gray-400 line-through">
+                            ${item.subtotal.toFixed(2)}
+                          </p>
+                        )}
+                        <p className="font-semibold text-gray-900">
+                          ${item.final_amount.toFixed(2)}
                         </p>
-                      )}
-                      <p className="font-semibold text-gray-900">
-                        ${item.final_amount.toFixed(2)}
-                      </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
