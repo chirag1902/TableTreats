@@ -3,6 +3,12 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+class DealApplied(BaseModel):
+    deal_id: str
+    deal_name: str
+    deal_type: str
+    discount_value: float
+
 class BillItem(BaseModel):
     item_id: str
     dish_name: str
@@ -11,7 +17,7 @@ class BillItem(BaseModel):
     subtotal: float
     discount_amount: float
     final_amount: float
-    deal_applied: Optional[str] = None
+    deal_applied: Optional[DealApplied] = None
 
 class BillOut(BaseModel):
     bill_id: str
