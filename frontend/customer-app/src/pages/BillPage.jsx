@@ -117,6 +117,11 @@ export default function BillPage() {
 
       setPaying(false);
       setPaymentComplete(true);
+
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 2000);
     } catch (error) {
       console.error("Payment error:", error);
       const errorMessage =
@@ -203,7 +208,7 @@ export default function BillPage() {
           </h1>
           <p className="text-gray-600 mb-6">
             Your payment of ${bill.total.toFixed(2)} has been processed
-            successfully.
+            successfully. Redirecting to dashboard...
           </p>
           <div className="bg-green-50 rounded-xl p-4 mb-6">
             <p className="text-sm text-green-800 break-all">
@@ -226,10 +231,10 @@ export default function BillPage() {
             </p>
           </div>
           <button
-            onClick={handleBackClick}
+            onClick={() => (window.location.href = "/dashboard")}
             className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
           >
-            Back to Reservations
+            Go to Dashboard
           </button>
         </div>
       </div>
