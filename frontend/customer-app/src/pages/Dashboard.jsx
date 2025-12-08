@@ -113,7 +113,7 @@ export default function Dashboard() {
   const detectLocation = () => {
     if (!navigator.geolocation) {
       setLocationError("Geolocation is not supported by your browser");
-      setUserLocation("New Brunswick, NJ");
+      setUserLocation("New Brunswick");
       return;
     }
 
@@ -134,42 +134,43 @@ export default function Dashboard() {
             data.address.town ||
             data.address.village ||
             "Unknown";
-          const state = data.address.state || "";
-          const locationString = state ? `${city}, ${state}` : city;
 
-          setUserLocation(locationString);
+          // Only use city name, no state
+          setUserLocation(city);
           setLocationError(null);
 
           // Update user data in localStorage
           const userDataStr = localStorage.getItem("userData");
           if (userDataStr) {
             const userData = JSON.parse(userDataStr);
-            userData.location = locationString;
+            userData.location = city;
             userData.coordinates = { latitude, longitude };
             localStorage.setItem("userData", JSON.stringify(userData));
           }
         } catch (error) {
           console.error("Error getting location name:", error);
-          setUserLocation("New Brunswick, NJ");
+          setUserLocation("New Brunswick");
         }
       },
       (error) => {
         console.error("Error getting location:", error);
         setLocationError("Unable to detect location");
-        setUserLocation("New Brunswick, NJ");
+        setUserLocation("New Brunswick");
       }
     );
   };
 
   const handleManualLocationChange = () => {
     if (manualLocation.trim()) {
-      setUserLocation(manualLocation.trim());
+      // Extract only city name if user enters "City, State" format
+      const cityOnly = manualLocation.split(",")[0].trim();
+      setUserLocation(cityOnly);
 
       // Update localStorage
       const userDataStr = localStorage.getItem("userData");
       if (userDataStr) {
         const userData = JSON.parse(userDataStr);
-        userData.location = manualLocation.trim();
+        userData.location = cityOnly;
         localStorage.setItem("userData", JSON.stringify(userData));
       }
 
@@ -183,11 +184,9 @@ export default function Dashboard() {
       setLoading(true);
       setError(null);
 
-      // Extract city from location string (e.g., "New Brunswick, NJ" -> "New Brunswick")
-      const city = userLocation.split(",")[0].trim();
-
+      // Use location as is (already just city name)
       const params = {
-        city: city,
+        city: userLocation,
         limit: 50,
         skip: 0,
       };
@@ -248,11 +247,11 @@ export default function Dashboard() {
       setError(null);
       const data = await searchRestaurants(searchQuery);
 
-      // Filter by user location
-      const city = userLocation.split(",")[0].trim().toLowerCase();
+      // Filter by user location (city only)
       const filteredData = data.filter(
         (restaurant) =>
-          restaurant.city && restaurant.city.toLowerCase().includes(city)
+          restaurant.city &&
+          restaurant.city.toLowerCase().includes(userLocation.toLowerCase())
       );
 
       groupByDeals(filteredData);
@@ -474,7 +473,7 @@ export default function Dashboard() {
                 type="text"
                 value={manualLocation}
                 onChange={(e) => setManualLocation(e.target.value)}
-                placeholder="e.g., New Brunswick, NJ"
+                placeholder="e.g., New Brunswick"
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-pink-500 transition-colors"
                 onKeyPress={(e) => {
                   if (e.key === "Enter") {
@@ -577,9 +576,6 @@ export default function Dashboard() {
                   <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                     {groupName === "Special Offers & Deals" ? "🎊" : "🍽️"}{" "}
                     {groupName} in {userLocation}
-                    <span className="text-lg font-normal text-gray-500">
-                      ({groupRestaurants.length})
-                    </span>
                   </h2>
 
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
