@@ -70,7 +70,7 @@ async def get_restaurant_reservations(
     
     result = []
     for res in reservations:
-        result.append({
+        reservation_data = {
             "id": str(res["_id"]),
             "customer_name": res["customer_name"],
             "customer_email": res["customer_email"],
@@ -80,10 +80,16 @@ async def get_restaurant_reservations(
             "number_of_guests": res["number_of_guests"],
             "status": res["status"],
             "special_requests": res.get("special_requests"),
-            "checked_in": res.get("checked_in", False),  # ADDED
-            "checked_in_at": res.get("checked_in_at"),    # ADDED
+            "checked_in": res.get("checked_in", False),
+            "checked_in_at": res.get("checked_in_at"),
             "created_at": res["created_at"]
-        })
+        }
+        
+        # Include bill data if exists
+        if res.get("bill"):
+            reservation_data["bill"] = res["bill"]
+        
+        result.append(reservation_data)
     
     return {
         "total": len(result),
@@ -111,15 +117,21 @@ async def get_todays_reservations(current_user: dict = Depends(get_current_resta
     
     result = []
     for res in reservations:
-        result.append({
+        reservation_data = {
             "id": str(res["_id"]),
             "customer_name": res["customer_name"],
             "time_slot": res["time_slot"],
             "number_of_guests": res["number_of_guests"],
             "status": res["status"],
-            "checked_in": res.get("checked_in", False),  # ADDED
-            "checked_in_at": res.get("checked_in_at")    # ADDED
-        })
+            "checked_in": res.get("checked_in", False),
+            "checked_in_at": res.get("checked_in_at")
+        }
+        
+        # Include bill data if exists
+        if res.get("bill"):
+            reservation_data["bill"] = res["bill"]
+        
+        result.append(reservation_data)
     
     return {
         "date": today,
@@ -314,7 +326,7 @@ async def undo_check_in(
     reservation_id: str,
     current_user: dict = Depends(get_current_restaurant)
 ):
-    """Undo check-in (in case of mistake)"""
+    """Undo check-in (in case of mistake) - Not allowed if bill exists"""
     restaurant = await db.restaurants.find_one({"email": current_user["email"]})
     if not restaurant:
         raise HTTPException(status_code=404, detail="Restaurant not found")
@@ -335,6 +347,13 @@ async def undo_check_in(
     if not reservation.get("checked_in", False):
         raise HTTPException(status_code=400, detail="Customer was not checked in")
     
+    # NEW: Check if bill exists
+    if reservation.get("bill"):
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot undo check-in after bill has been generated"
+        )
+    
     await db.reservations.update_one(
         {"_id": ObjectId(reservation_id)},
         {
@@ -353,7 +372,6 @@ async def undo_check_in(
         "reservation_id": reservation_id,
         "customer_name": reservation["customer_name"]
     }
-
 
 @router.get("/restaurant/reservations/today/check-in-status")
 async def get_todays_checkin_status(current_user: dict = Depends(get_current_restaurant)):
