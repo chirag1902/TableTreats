@@ -1,6 +1,3 @@
-// File: src/pages/PaymentReceipt.jsx
-// Create this new file
-
 import React, { useState, useEffect } from "react";
 import {
   ArrowLeft,
@@ -13,7 +10,6 @@ import {
   Download,
   Mail,
   Phone,
-  MapPin,
   DollarSign,
 } from "lucide-react";
 
@@ -44,7 +40,7 @@ export default function PaymentReceipt() {
         throw new Error("Please log in to view receipt");
       }
 
-      // Fetch bill details directly from the bill endpoint
+      // ✅ Using the /restaurant/bills endpoint
       const response = await fetch(
         `https://tabletreats-restaurantapp.onrender.com/api/restaurant/bills/${reservationId}`,
         {
@@ -61,6 +57,9 @@ export default function PaymentReceipt() {
           window.location.href = "/signin";
           return;
         }
+        if (response.status === 404) {
+          throw new Error("Bill not found for this reservation");
+        }
         throw new Error("Failed to load receipt");
       }
 
@@ -71,32 +70,7 @@ export default function PaymentReceipt() {
         throw new Error("This bill has not been paid yet");
       }
 
-      // Structure the data for display
-      const receiptData = {
-        id: data.reservation_id,
-        customer_name: data.customer_name,
-        customer_email: data.customer_email,
-        customer_phone: data.customer_phone,
-        date: data.date,
-        time_slot: data.time_slot,
-        number_of_guests: data.number_of_guests,
-        bill: {
-          bill_id: data.bill_id,
-          items: data.items,
-          subtotal: data.subtotal,
-          discount_total: data.discount_total,
-          subtotal_after_discount: data.subtotal_after_discount,
-          tax_rate: data.tax_rate,
-          tax_amount: data.tax_amount,
-          total: data.total,
-          notes: data.notes,
-          paid: data.paid,
-          paid_at: data.paid_at,
-          created_at: data.created_at,
-        },
-      };
-
-      setReceipt(receiptData);
+      setReceipt(data);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching receipt:", error);
@@ -126,7 +100,6 @@ export default function PaymentReceipt() {
 
   const formatMongoDate = (dateObj) => {
     if (!dateObj) return "";
-    // Handle MongoDB date format: { "$date": "..." } or plain ISO string
     const dateString = dateObj.$date || dateObj;
     return new Date(dateString).toLocaleString();
   };
@@ -200,7 +173,7 @@ export default function PaymentReceipt() {
                   Payment Receipt
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Reservation #{receipt.id.slice(-8)}
+                  Reservation #{receipt.reservation_id.slice(-8)}
                 </p>
               </div>
             </div>
@@ -223,7 +196,7 @@ export default function PaymentReceipt() {
             <h2 className="text-2xl font-bold">Payment Successful</h2>
           </div>
           <p className="text-center text-green-100">
-            Transaction completed on {formatMongoDate(receipt.bill.paid_at)}
+            Transaction completed on {formatMongoDate(receipt.paid_at)}
           </p>
         </div>
 
@@ -243,7 +216,7 @@ export default function PaymentReceipt() {
             <div className="border-t border-pink-300 pt-4">
               <p className="text-sm text-pink-100">Transaction ID</p>
               <p className="font-mono text-lg font-semibold break-all">
-                {receipt.bill.bill_id}
+                {receipt.bill_id}
               </p>
             </div>
           </div>
@@ -313,7 +286,7 @@ export default function PaymentReceipt() {
               Order Details
             </h4>
             <div className="space-y-4">
-              {receipt.bill.items.map((item, index) => {
+              {receipt.items.map((item, index) => {
                 const dealText = getDealDisplayText(item.deal_applied);
                 return (
                   <div
@@ -364,38 +337,35 @@ export default function PaymentReceipt() {
             <div className="space-y-3">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>${Number(receipt.bill.subtotal || 0).toFixed(2)}</span>
+                <span>${Number(receipt.subtotal || 0).toFixed(2)}</span>
               </div>
-              {receipt.bill.discount_total > 0 && (
+              {receipt.discount_total > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Total Discounts</span>
                   <span>
-                    -${Number(receipt.bill.discount_total || 0).toFixed(2)}
+                    -${Number(receipt.discount_total || 0).toFixed(2)}
                   </span>
                 </div>
               )}
               <div className="flex justify-between text-gray-600">
-                <span>
-                  Tax ({Number(receipt.bill.tax_rate || 0).toFixed(1)}%)
-                </span>
-                <span>${Number(receipt.bill.tax_amount || 0).toFixed(2)}</span>
+                <span>Tax ({Number(receipt.tax_rate || 0).toFixed(1)}%)</span>
+                <span>${Number(receipt.tax_amount || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-2xl font-bold text-gray-900 pt-3 border-t-2">
                 <span>Total Paid</span>
                 <span className="flex items-center gap-1">
                   <DollarSign className="w-6 h-6" />
-                  {Number(receipt.bill.total || 0).toFixed(2)}
+                  {Number(receipt.total || 0).toFixed(2)}
                 </span>
               </div>
             </div>
 
-            {receipt.bill.notes &&
-              receipt.bill.notes !== "string" &&
-              receipt.bill.notes.trim() !== "" && (
+            {receipt.notes &&
+              receipt.notes !== "string" &&
+              receipt.notes.trim() !== "" && (
                 <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                   <p className="text-sm text-gray-700">
-                    <span className="font-semibold">Note:</span>{" "}
-                    {receipt.bill.notes}
+                    <span className="font-semibold">Note:</span> {receipt.notes}
                   </p>
                 </div>
               )}
