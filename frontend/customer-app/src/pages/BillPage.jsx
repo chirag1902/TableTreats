@@ -1,3 +1,4 @@
+// src/pages/BillPage.jsx
 import React, { useState, useEffect } from "react";
 import {
   Calendar,
@@ -11,6 +12,7 @@ import {
   Loader,
   AlertCircle,
 } from "lucide-react";
+import { getBill, payBill } from "../services/api";
 
 export default function BillPage() {
   const [bill, setBill] = useState(null);
@@ -38,34 +40,14 @@ export default function BillPage() {
         throw new Error("Reservation ID not found in URL");
       }
 
-      // Get auth token from localStorage
+      // Check if user is logged in
       const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("Please log in to view your bill");
       }
 
-      // Fetch bill data from API
-      const response = await fetch(`/api/reservations/${reservationId}/bill`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error("Bill not found for this reservation");
-        } else if (response.status === 401) {
-          throw new Error("Please log in to view your bill");
-        } else if (response.status === 403) {
-          throw new Error("You do not have access to this bill");
-        }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Failed to load bill data");
-      }
-
-      const data = await response.json();
+      // Fetch bill data using API service
+      const data = await getBill(reservationId);
 
       // Set reservation data
       setReservation({
@@ -101,7 +83,11 @@ export default function BillPage() {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching bill:", error);
-      setError(error.message || "Failed to load bill. Please try again.");
+      const errorMessage =
+        error.detail ||
+        error.message ||
+        "Failed to load bill. Please try again.";
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -110,7 +96,7 @@ export default function BillPage() {
     setPaying(true);
 
     try {
-      // Get auth token
+      // Check if user is logged in
       const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("Please log in to make payment");
@@ -125,34 +111,23 @@ export default function BillPage() {
         throw new Error("Reservation ID not found");
       }
 
-      // Call payment API
-      const response = await fetch(`/api/reservations/${reservationId}/pay`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Payment failed");
-      }
-
-      const data = await response.json();
+      // Call payment API using service
+      const data = await payBill(reservationId);
       console.log("Payment successful:", data);
 
       setPaying(false);
       setPaymentComplete(true);
     } catch (error) {
       console.error("Payment error:", error);
-      alert(error.message || "Payment failed. Please try again.");
+      const errorMessage =
+        error.detail || error.message || "Payment failed. Please try again.";
+      alert(errorMessage);
       setPaying(false);
     }
   };
 
   const handleBackClick = () => {
-    // Navigate back to reservations or home page
+    // Navigate back to reservations page
     window.location.href = "/reservations";
   };
 
