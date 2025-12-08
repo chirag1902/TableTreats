@@ -164,7 +164,7 @@ async def get_reservation_details(
     if reservation["restaurant_id"] != restaurant_id:
         raise HTTPException(status_code=403, detail="Not authorized to view this reservation")
     
-    return {
+    result = {
         "id": str(reservation["_id"]),
         "customer_name": reservation["customer_name"],
         "customer_email": reservation["customer_email"],
@@ -174,11 +174,19 @@ async def get_reservation_details(
         "number_of_guests": reservation["number_of_guests"],
         "status": reservation["status"],
         "special_requests": reservation.get("special_requests"),
-        "checked_in": reservation.get("checked_in", False),  # ADDED
-        "checked_in_at": reservation.get("checked_in_at"),    # ADDED
+        "checked_in": reservation.get("checked_in", False),
+        "checked_in_at": reservation.get("checked_in_at"),
         "created_at": reservation["created_at"],
         "updated_at": reservation.get("updated_at")
     }
+    
+    # ADD THESE LINES - Include bill data if exists
+    if reservation.get("bill"):
+        result["bill"] = reservation["bill"]
+    
+    return result
+
+
 
 
 @router.put("/restaurant/reservations/{reservation_id}/cancel")

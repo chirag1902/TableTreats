@@ -44,9 +44,9 @@ export default function PaymentReceipt() {
         throw new Error("Please log in to view receipt");
       }
 
-      // Fetch reservation details with bill
+      // Fetch bill details directly from the bill endpoint
       const response = await fetch(
-        `https://tabletreats-restaurantapp.onrender.com/api/restaurant/reservations/${reservationId}`,
+        `https://tabletreats-restaurantapp.onrender.com/api/restaurant/bills/${reservationId}`,
         {
           method: "GET",
           headers: {
@@ -66,12 +66,37 @@ export default function PaymentReceipt() {
 
       const data = await response.json();
 
-      // Check if bill exists and is paid
-      if (!data.bill || !data.bill.paid) {
-        throw new Error("No payment found for this reservation");
+      // Check if bill is paid
+      if (!data.paid) {
+        throw new Error("This bill has not been paid yet");
       }
 
-      setReceipt(data);
+      // Structure the data for display
+      const receiptData = {
+        id: data.reservation_id,
+        customer_name: data.customer_name,
+        customer_email: data.customer_email,
+        customer_phone: data.customer_phone,
+        date: data.date,
+        time_slot: data.time_slot,
+        number_of_guests: data.number_of_guests,
+        bill: {
+          bill_id: data.bill_id,
+          items: data.items,
+          subtotal: data.subtotal,
+          discount_total: data.discount_total,
+          subtotal_after_discount: data.subtotal_after_discount,
+          tax_rate: data.tax_rate,
+          tax_amount: data.tax_amount,
+          total: data.total,
+          notes: data.notes,
+          paid: data.paid,
+          paid_at: data.paid_at,
+          created_at: data.created_at,
+        },
+      };
+
+      setReceipt(receiptData);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching receipt:", error);
