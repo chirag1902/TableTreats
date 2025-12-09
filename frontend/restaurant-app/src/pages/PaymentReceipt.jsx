@@ -1,3 +1,4 @@
+// File: src/pages/PaymentReceipt.jsx
 import React, { useState, useEffect } from "react";
 import {
   ArrowLeft,
