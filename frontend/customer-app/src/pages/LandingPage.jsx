@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-
-const logoSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23ff6b6b' width='100' height='100' rx='20'/%3E%3Ctext x='50' y='60' font-size='60' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E";
+import { useNavigate } from "react-router-dom";
+import logoImage from "../assets/logo.png";
 
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [scrollY, setScrollY] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -14,6 +15,10 @@ export default function LandingPage() {
 
   const handleSearch = () => {
     console.log("Searching for:", searchQuery);
+  };
+
+  const handleNavigate = (path) => {
+    navigate(path);
   };
 
   const features = [
@@ -125,7 +130,7 @@ export default function LandingPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <img 
-                src={logoSvg} 
+                src={logoImage} 
                 alt="Tabletreats Logo" 
                 className="w-12 h-12 object-contain"
               />
@@ -168,8 +173,6 @@ export default function LandingPage() {
                       ? "text-gray-700 hover:text-pink-500"
                       : "text-white hover:text-pink-300"
                   }`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                 >
                   For Restaurants
                 </a>
@@ -177,13 +180,13 @@ export default function LandingPage() {
             </ul>
             <div className="flex gap-3">
               <button
-                onClick={() => window.location.href = "/login"}
+                onClick={() => handleNavigate("/login")}
                 className="px-6 py-2 rounded-full border-2 border-pink-500 text-pink-500 font-semibold hover:bg-pink-500 hover:text-white transition-all hover:scale-105"
               >
                 Login
               </button>
               <button
-                onClick={() => window.location.href = "/signup"}
+                onClick={() => handleNavigate("/signup")}
                 className="px-6 py-2 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/50 transition-all hover:scale-105"
               >
                 Get Started
@@ -473,7 +476,7 @@ export default function LandingPage() {
             experience
           </p>
           <button
-            onClick={() => window.location.href = "/signup"}
+            onClick={() => handleNavigate("/signup")}
             className="px-12 py-5 bg-white text-purple-700 rounded-full font-bold text-xl shadow-2xl hover:scale-110 transition-all hover:shadow-white/30"
           >
             Get Started Now - It is Free
@@ -506,28 +509,22 @@ export default function LandingPage() {
                   <a
                     href="https://table-treats-d27w.vercel.app/"
                     className="hover:text-pink-500 transition-colors"
-                    target="_blank"
-                    rel="noopener noreferrer"
                   >
                     Partner With Us
                   </a>
                 </li>
                 <li>
                   <a
-                    href="https://table-treats-d27w.vercel.app/"
+                    href="#dashboard"
                     className="hover:text-pink-500 transition-colors"
-                    target="_blank"
-                    rel="noopener noreferrer"
                   >
                     Dashboard
                   </a>
                 </li>
                 <li>
                   <a
-                    href="https://table-treats-d27w.vercel.app/"
+                    href="#pricing"
                     className="hover:text-pink-500 transition-colors"
-                    target="_blank"
-                    rel="noopener noreferrer"
                   >
                     Pricing
                   </a>
