@@ -189,7 +189,7 @@ export default function CreateDealPage() {
             ? null
             : parseInt(formData.discount_value),
         valid_days: formData.valid_days.map((i) =>
-  daysOfWeek[i].toLowerCase()),
+        daysOfWeek[i].toLowerCase()),
         time_start: formData.time_start,
         time_end: formData.time_end,
         start_date: formData.start_date,
@@ -328,7 +328,8 @@ export default function CreateDealPage() {
       description: deal.description,
       discount_type: deal.discount_type,
       discount_value: deal.discount_value || "",
-      valid_days: deal.valid_days || [0],
+      valid_days: (deal.valid_days || []).map(day =>
+      daysOfWeek.findIndex(d => d.toLowerCase() === day.toLowerCase())),
       time_start: deal.time_start || "00:00",
       time_end: deal.time_end || "23:59",
       start_date: deal.start_date || "",
