@@ -208,20 +208,18 @@ export default function SeatingConfiguration() {
 
       // Transform frontend structure to backend structure
       // Backend expects: seating_areas: [{ area_type, area_name, seats_per_table, number_of_tables }]
-      // Transform frontend structure to backend required structure
-    const backendPayload = {
-      seating_areas: seatingConfig.areas.flatMap((area) => {
-        const formattedAreaType = area.name.toLowerCase().replace(/\s+/g, "_");
+      const backendPayload = {
+        seating_areas: seatingConfig.areas.flatMap((area) => {
+          const formattedAreaType = area.name.toLowerCase().replace(/\s+/g, "_");
 
-        return area.tables.map((table) => ({
-        area_type: formattedAreaType,   // backend-allowed enum
-        area_name: area.name,           // UI display name
-        seats_per_table: Number(table.capacity),
-        number_of_tables: Number(table.quantity),
-        }));
-      }),
-    };
-
+          return area.tables.map((table) => ({
+            area_type: formattedAreaType,   // backend-allowed enum
+            area_name: area.name,           // UI display name
+            seats_per_table: Number(table.capacity),
+            number_of_tables: Number(table.quantity),
+          }));
+        }),
+      };
 
       console.log("Sending payload to backend:", backendPayload);
 
@@ -282,10 +280,6 @@ export default function SeatingConfiguration() {
                     Seating Configuration
                   </span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  {restaurant?.name}
-                  {restaurant?.city ? ` - ${restaurant.city}` : ""}
-                </h1>
               </div>
             </div>
             <button
