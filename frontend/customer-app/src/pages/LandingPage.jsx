@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import logoImage from "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23ff6b6b' width='100' height='100' rx='20'/%3E%3Ctext x='50' y='60' font-size='60' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E";
+
+const logoSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23ff6b6b' width='100' height='100' rx='20'/%3E%3Ctext x='50' y='60' font-size='60' font-weight='bold' fill='white' text-anchor='middle'%3ET%3C/text%3E%3C/svg%3E";
 
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,7 +125,7 @@ export default function LandingPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <img 
-                src={logoImage} 
+                src={logoSvg} 
                 alt="Tabletreats Logo" 
                 className="w-12 h-12 object-contain"
               />
