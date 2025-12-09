@@ -188,7 +188,8 @@ export default function CreateDealPage() {
           formData.discount_type === "bogo"
             ? null
             : parseInt(formData.discount_value),
-        valid_days: formData.valid_days,
+        valid_days: formData.valid_days.map((i) =>
+  daysOfWeek[i].toLowerCase()),
         time_start: formData.time_start,
         time_end: formData.time_end,
         start_date: formData.start_date,
