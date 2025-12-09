@@ -6,6 +6,7 @@ import {
   DollarSign, Users, TrendingUp, Edit, Clock,
   CheckCircle, XCircle, Package, ImagePlus, Image, Phone, Armchair, RefreshCw
 } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 export default function RestaurantDashboard() {
   const navigate = useNavigate();
@@ -286,9 +287,7 @@ export default function RestaurantDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-                T
-              </div>
+              <img src={logo} alt="TableTreats" className="w-10 h-10" />
               <div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent block">
                   TableTreats

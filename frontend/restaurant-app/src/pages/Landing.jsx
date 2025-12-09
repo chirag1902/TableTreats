@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import authSideImage from "../assets/auth-side.png";
+import logo from "../assets/logo.png";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -31,9 +32,7 @@ export default function Landing() {
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">
-              T
-            </div>
+            <img src={logo} alt="TableTreats" className="w-10 h-10" />
             <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
               TableTreats
             </span>
@@ -263,9 +262,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                  T
-                </div>
+                <img src={logo} alt="TableTreats" className="w-8 h-8" />
                 <span className="font-bold text-white">TableTreats</span>
               </div>
               <p className="text-sm">
