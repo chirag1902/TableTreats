@@ -283,7 +283,8 @@ export default function SeatingConfiguration() {
                   </span>
                 </div>
                 <h1 className="text-xl font-bold text-gray-900">
-                  Chipotle - New Brunswick
+                  {restaurant?.name}
+                  {restaurant?.city ? ` - ${restaurant.city}` : ""}
                 </h1>
               </div>
             </div>
