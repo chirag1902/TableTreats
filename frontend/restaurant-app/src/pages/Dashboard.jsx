@@ -17,6 +17,8 @@ export default function RestaurantDashboard() {
   const [galleryType, setGalleryType] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
   const intervalRef = useRef(null);
 
   // Function to fetch data
@@ -34,15 +36,25 @@ export default function RestaurantDashboard() {
     try {
       console.log('🔍 Fetching restaurant data...');
       
-      const [profileData, reservationsData] = await Promise.all([
+      const [profileData, reservationsData, customersData, revenueData] = await Promise.all([
         getRestaurantProfile(),
-        getTodayReservations()
+        getTodayReservations(),
+        fetch('https://tabletreats-restaurantapp.onrender.com/api/restaurant/stats/total-guests', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(res => res.json()).catch(() => ({ total_guests: 0 })),
+        fetch('https://tabletreats-restaurantapp.onrender.com/api/restaurant/revenue', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(res => res.json()).catch(() => ({ total_revenue: 0 }))
       ]);
       
       console.log('📊 Profile Data:', profileData);
       console.log('📅 Today Reservations Data:', reservationsData);
+      console.log('👥 Total Customers:', customersData);
+      console.log('💰 Total Revenue:', revenueData);
       
       setRestaurantData(profileData);
+      setTotalCustomers(customersData.total_guests || 0);
+      setTotalRevenue(revenueData.total_revenue || 0);
       
       if (reservationsData) {
         const reservations = Array.isArray(reservationsData) 
@@ -151,17 +163,16 @@ export default function RestaurantDashboard() {
       gradient: "from-blue-500 to-cyan-500",
       bgGradient: "from-blue-50 to-cyan-50"
     },
-
     {
-      title: "This Week's Revenue",
-      value: "$3,450",
+      title: "Total Revenue",
+      value: `$${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: DollarSign,
       gradient: "from-green-500 to-emerald-500",
       bgGradient: "from-green-50 to-emerald-50"
     },
     {
       title: "Total Customers",
-      value: "1,234",
+      value: totalCustomers.toLocaleString(),
       icon: Users,
       gradient: "from-purple-500 to-pink-500",
       bgGradient: "from-purple-50 to-pink-50"
