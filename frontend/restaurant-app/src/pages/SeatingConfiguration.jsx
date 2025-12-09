@@ -208,17 +208,20 @@ export default function SeatingConfiguration() {
 
       // Transform frontend structure to backend structure
       // Backend expects: seating_areas: [{ area_type, area_name, seats_per_table, number_of_tables }]
-      const backendPayload = {
-        seating_areas: seatingConfig.areas.flatMap((area) => {
-          // For each area, create separate entries for each table configuration
-          return area.tables.map((table) => ({
-            area_type: area.name,
-            area_name: area.name,
-            seats_per_table: table.capacity,
-            number_of_tables: table.quantity,
-          }));
-        }),
-      };
+      // Transform frontend structure to backend required structure
+    const backendPayload = {
+      seating_areas: seatingConfig.areas.flatMap((area) => {
+        const formattedAreaType = area.name.toLowerCase().replace(/\s+/g, "_");
+
+        return area.tables.map((table) => ({
+        area_type: formattedAreaType,   // backend-allowed enum
+        area_name: area.name,           // UI display name
+        seats_per_table: Number(table.capacity),
+        number_of_tables: Number(table.quantity),
+        }));
+      }),
+    };
+
 
       console.log("Sending payload to backend:", backendPayload);
 
