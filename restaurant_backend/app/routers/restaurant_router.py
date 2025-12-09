@@ -889,3 +889,32 @@ async def get_public_restaurant_promos(restaurant_id: str):
         "promos": active_promos
     }
 
+@router.get("/restaurant/revenue")
+async def get_total_revenue(
+    current_user: dict = Depends(get_current_restaurant)
+):
+    """Get total revenue for the restaurant from all bills"""
+    restaurant = await db.restaurants.find_one({"email": current_user["email"]})
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+    
+    restaurant_id = str(restaurant["_id"])
+    
+    # Get all reservations with bills for this restaurant
+    reservations_with_bills = await db.reservations.find({
+        "restaurant_id": restaurant_id,
+        "bill": {"$exists": True}
+    }).to_list(length=None)
+    
+    # Calculate total revenue by summing all bill totals
+    total_revenue = sum(res["bill"]["total"] for res in reservations_with_bills)
+    
+    # Round to 2 decimal places
+    total_revenue = round(total_revenue, 2)
+    
+    return {
+        "restaurant_id": restaurant_id,
+        "restaurant_name": restaurant.get("restaurant_name"),
+        "total_revenue": total_revenue,
+        "total_bills": len(reservations_with_bills)
+    }
