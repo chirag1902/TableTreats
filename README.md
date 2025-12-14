@@ -163,8 +163,6 @@ TableTreats/
 - **Vite** - Build tool (Restaurant App)
 - **Create React App** - Build tool (Customer App)
 - **Tailwind CSS** - Styling
-- **Axios** - API Communication
-- **React Router DOM** - Client-side Routing
 
 ### Backend
 - **FastAPI** - Web Framework
@@ -325,3 +323,4 @@ For detailed API specifications, see [docs/api-specs.md](docs/api-specs.md)
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. Add environment variables
 7. Deploy
+
