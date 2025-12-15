@@ -46,8 +46,8 @@ TableTreats is a full-stack application designed to:
 - 🔐 Sign up / Sign in (email/password authentication)
 - 🔍 Browse restaurants with photos and details
 - 🎯 Filter and search (location, cuisine, price, rating, availability)
-- 📋 View menu and restaurant details (hours, address, contact)
-- 📅 Make, view, update, or cancel bookings
+- 📋 View menu images and restaurant details (hours, address, contact)
+- 📅 Make, view, or cancel bookings
 - 📧 Receive booking confirmation
 - 💳 Pay bills
 
@@ -322,5 +322,6 @@ For detailed API specifications, see [docs/api-specs.md](docs/api-specs.md)
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. Add environment variables
 7. Deploy
+
 
 
