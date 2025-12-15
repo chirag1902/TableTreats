@@ -54,9 +54,9 @@ TableTreats is a full-stack application designed to:
 ### Restaurant Owner
 - 🔐 Register and claim owner account
 - 🏪 Create and manage restaurant profile (name, address, opening hours)
-- 🍕 Add menus, images, and table layout
+- 🍕 Add menus images, and ambiance images
 - 🪑 Configure seating arrangements
-- 📈 View analytics / booking history
+- 📈 View booking history along with total customers and total revenue
 - 🎁 Create and manage deals/promotions
 - 🧾 Create bills for customers
 
@@ -322,6 +322,7 @@ For detailed API specifications, see [docs/api-specs.md](docs/api-specs.md)
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. Add environment variables
 7. Deploy
+
 
 
 
