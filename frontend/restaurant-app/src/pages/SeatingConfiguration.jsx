@@ -1,3 +1,7 @@
+// Seating area and table capacity configuration page for reservation management
+// Allows creating multiple seating areas (indoor, outdoor, bar, etc.) with table quantities and capacities
+// Calculates total available seats and saves configuration to backend for reservation availability checks
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -210,11 +214,13 @@ export default function SeatingConfiguration() {
       // Backend expects: seating_areas: [{ area_type, area_name, seats_per_table, number_of_tables }]
       const backendPayload = {
         seating_areas: seatingConfig.areas.flatMap((area) => {
-          const formattedAreaType = area.name.toLowerCase().replace(/\s+/g, "_");
+          const formattedAreaType = area.name
+            .toLowerCase()
+            .replace(/\s+/g, "_");
 
           return area.tables.map((table) => ({
-            area_type: formattedAreaType,   // backend-allowed enum
-            area_name: area.name,           // UI display name
+            area_type: formattedAreaType, // backend-allowed enum
+            area_name: area.name, // UI display name
             seats_per_table: Number(table.capacity),
             number_of_tables: Number(table.quantity),
           }));

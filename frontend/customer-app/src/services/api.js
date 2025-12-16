@@ -1,4 +1,9 @@
 // src/services/api.js
+
+// API configuration and axios instance setup for making HTTP requests to the backend
+// Includes base URL configuration, authentication token management, and response interceptors
+// Handles reservation and bill-related API endpoints with automatic token injection
+
 import axios from "axios";
 
 const api = axios.create({

@@ -1,4 +1,9 @@
 # services/reservation_service.py
+"""
+Reservation service for managing restaurant reservations.
+Handles availability checking, time slot generation, reservation creation/cancellation, and seating area management.
+"""
+
 from database import Restaurant_db
 from bson import ObjectId
 from typing import Optional, List, Dict

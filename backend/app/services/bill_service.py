@@ -1,4 +1,11 @@
 # services/bill_service.py
+
+"""
+Bill service for managing customer bills and payments.
+Handles retrieving bills associated with reservations and marking bills as paid.
+"""
+
+
 from database import Restaurant_db
 from bson import ObjectId
 from typing import Optional, Dict

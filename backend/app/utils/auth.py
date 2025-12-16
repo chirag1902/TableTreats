@@ -1,3 +1,9 @@
+# utils/auth.py
+"""
+Authentication utilities for password hashing, JWT token creation/verification, and user authorization.
+Provides dependency functions for protecting routes and validating user roles.
+"""
+
 import hashlib
 import os
 import base64
@@ -8,17 +14,16 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
-# Bearer token scheme
 security = HTTPBearer()
 
 def hash_password(password: str) -> str:
-    """Hash a password using scrypt"""
+    """Hash a password using scrypt algorithm with random salt"""
     salt = os.urandom(32)
     pwd_hash = hashlib.scrypt(password.encode('utf-8'), salt=salt, n=16384, r=8, p=1, dklen=64)
     return base64.b64encode(salt + pwd_hash).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against a scrypt hash"""
+    """Verify a plain password against a scrypt hashed password"""
     try:
         decoded = base64.b64decode(hashed_password.encode('utf-8'))
         salt = decoded[:32]
@@ -29,7 +34,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a JWT access token"""
+    """Create a JWT access token with expiration"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -41,7 +46,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 def decode_token(token: str) -> dict:
-    """Decode and verify a JWT token"""
+    """Decode and verify a JWT token, raises HTTPException if invalid"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
@@ -53,7 +58,7 @@ def decode_token(token: str) -> dict:
         )
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """Dependency to get current authenticated user"""
+    """FastAPI dependency to extract and validate current authenticated user from JWT token"""
     token = credentials.credentials
     payload = decode_token(token)
     
@@ -69,7 +74,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return {"email": email, "role": role}
 
 async def get_current_customer(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verify JWT token and return current user"""
+    """FastAPI dependency to verify JWT token and ensure user has customer role"""
     token = credentials.credentials
     
     try:
@@ -92,10 +97,8 @@ async def get_current_customer(credentials: HTTPAuthorizationCredentials = Depen
             detail="Invalid authentication credentials"
         )
 
-
-
 async def get_current_restaurant(current_user: dict = Depends(get_current_user)) -> dict:
-    """Dependency to ensure user is a restaurant"""
+    """FastAPI dependency to ensure authenticated user has restaurant role"""
     if current_user.get("role") != "restaurant":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

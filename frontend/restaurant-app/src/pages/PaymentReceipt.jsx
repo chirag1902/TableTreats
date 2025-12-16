@@ -1,4 +1,9 @@
 // File: src/pages/PaymentReceipt.jsx
+
+// Payment receipt display page showing completed bill details for paid reservations
+// Fetches bill data by reservation ID and displays itemized bill with applied deals and totals
+// Includes print/download functionality and displays transaction ID, customer info, and payment timestamp
+
 import React, { useState, useEffect } from "react";
 import {
   ArrowLeft,

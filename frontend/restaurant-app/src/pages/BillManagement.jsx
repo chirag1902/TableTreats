@@ -1,3 +1,7 @@
+// Bill creation and management interface for checked-in customers with itemized billing
+// Allows adding manual items, applying deals/promotions to items, and calculating taxes and discounts
+// Prevents duplicate bill creation and displays existing bills with total amounts and payment status
+
 import React, { useState, useEffect } from "react";
 import {
   ArrowLeft,

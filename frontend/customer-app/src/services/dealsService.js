@@ -1,4 +1,9 @@
 // src/services/dealsService.js
+
+// Service for fetching restaurant deals and promotions
+// Provides functions to get all deals for a restaurant and filter applicable deals by date and time slot
+// Handles error formatting for deal-related API requests
+
 import api from "./api";
 
 export const getRestaurantDeals = async (restaurantId) => {

@@ -1,4 +1,10 @@
 # app/services/auth.py
+
+"""
+Authentication utilities for restaurant backend.
+Handles password hashing with scrypt, JWT token creation/verification, and role-based authorization.
+"""
+
 import hashlib
 import os
 import base64

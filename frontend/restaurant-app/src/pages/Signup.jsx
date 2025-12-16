@@ -1,6 +1,10 @@
+// Restaurant partner registration page for creating new restaurant accounts
+// Collects restaurant name, email, password, phone, and address with glassmorphic UI design
+// Submits signup data to backend and redirects to signin page on successful registration
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { restaurantSignup } from "../api/restaurant"; // your backend API call
+import { restaurantSignup } from "../api/restaurant"; // backend API call
 import sideImg from "../assets/auth-side.png"; // background image
 
 export default function SignUp() {
@@ -129,7 +133,9 @@ export default function SignUp() {
         <p style={subtitle}>Sign up to get started</p>
 
         {error && <p style={{ color: "salmon", marginBottom: 12 }}>{error}</p>}
-        {success && <p style={{ color: "#90ee90", marginBottom: 12 }}>{success}</p>}
+        {success && (
+          <p style={{ color: "#90ee90", marginBottom: 12 }}>{success}</p>
+        )}
 
         <form onSubmit={handleSubmit}>
           <input

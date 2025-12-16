@@ -1,5 +1,7 @@
 // File: src/App.jsx
-// Replace your existing App.jsx with this
+// Main restaurant application router defining all available routes and their corresponding components
+// Includes public routes (landing, signin, signup) and protected routes (dashboard, onboarding, profile management)
+// Maps URL paths to pages for reservations, seating configuration, bill management, deals, and payment receipts
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import RestaurantDashboard from "./pages/Dashboard";
@@ -9,7 +11,7 @@ import SeatingConfiguration from "./pages/SeatingConfiguration";
 import AllReservations from "./pages/AllReservations";
 import CreateDealPage from "./pages/CreateDealPage";
 import BillManagement from "./pages/BillManagement";
-import PaymentReceipt from "./pages/PaymentReceipt"; // NEW
+import PaymentReceipt from "./pages/PaymentReceipt";
 import SignIn from "./pages/SignIn";
 import Landing from "./pages/Landing";
 import SignUp from "./pages/Signup";

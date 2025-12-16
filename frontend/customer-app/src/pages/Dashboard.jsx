@@ -1,4 +1,9 @@
 // src/pages/Dashboard.jsx
+
+// Main customer dashboard displaying restaurants with filters by cuisine and location
+// Auto-detects user location via geolocation API and allows manual location changes
+// Groups restaurants by deals/offers and standard listings with search functionality
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {

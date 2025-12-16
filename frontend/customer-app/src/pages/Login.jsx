@@ -1,4 +1,9 @@
 // src/pages/Login.jsx
+
+// Customer login page with email/password authentication
+// Handles form validation, token storage in localStorage, and redirects to dashboard on success
+// Includes password visibility toggle
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";

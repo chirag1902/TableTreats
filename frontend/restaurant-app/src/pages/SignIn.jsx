@@ -1,3 +1,7 @@
+// Restaurant partner sign-in page with email/password authentication
+// Features glassmorphic design with background image overlay and password visibility toggle
+// Handles login, token storage, and redirects to dashboard or onboarding based on profile completion status
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { restaurantLogin } from "../api/restaurant";

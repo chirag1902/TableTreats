@@ -1,4 +1,9 @@
 // src/App.jsx
+
+// Main application component with routing configuration and route protection
+// Implements ProtectedRoute wrapper for authenticated pages and PublicRoute for auth pages
+// Defines all application routes including landing, dashboard, restaurant details, reservations, profile, and bill pages
+
 import {
   BrowserRouter as Router,
   Routes,

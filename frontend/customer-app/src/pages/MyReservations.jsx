@@ -1,3 +1,7 @@
+// Customer reservations management page displaying all bookings with filtering and search
+// Shows reservation statistics (total, confirmed, upcoming, cancelled) and allows cancellation
+// Provides links to pay bills for checked-in reservations and displays reservation details
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyReservations, cancelReservation } from "../services/api";

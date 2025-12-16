@@ -1,18 +1,23 @@
 // src/pages/Profile.jsx
+
+// Customer profile page showing user information and membership tier based on reservation count
+// Displays quick stats (total bookings, confirmed, upcoming) and recent reservation history
+// Includes membership progress tracking and quick action buttons for booking and viewing reservations
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  User, 
-  MapPin, 
-  Mail, 
-  Calendar, 
-  Award, 
-  Clock, 
+import {
+  User,
+  MapPin,
+  Mail,
+  Calendar,
+  Award,
+  Clock,
   ArrowLeft,
   Star,
   TrendingUp,
   ChevronRight,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { getMyReservations } from "../services/api";
 import { logout } from "../services/authService";
@@ -27,7 +32,7 @@ export default function Profile() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    
+
     if (!token) {
       navigate("/login");
       return;
@@ -69,15 +74,46 @@ export default function Profile() {
   };
 
   const getMembershipTier = (reservationCount) => {
-    if (reservationCount >= 20) return { name: "Platinum", color: "from-gray-400 to-gray-600", icon: "💎", nextTier: null, needed: 0 };
-    if (reservationCount >= 10) return { name: "Gold", color: "from-yellow-400 to-yellow-600", icon: "🥇", nextTier: "Platinum", needed: 20 - reservationCount };
-    if (reservationCount >= 5) return { name: "Silver", color: "from-gray-300 to-gray-500", icon: "🥈", nextTier: "Gold", needed: 10 - reservationCount };
-    return { name: "Bronze", color: "from-orange-400 to-orange-600", icon: "🥉", nextTier: "Silver", needed: 5 - reservationCount };
+    if (reservationCount >= 20)
+      return {
+        name: "Platinum",
+        color: "from-gray-400 to-gray-600",
+        icon: "💎",
+        nextTier: null,
+        needed: 0,
+      };
+    if (reservationCount >= 10)
+      return {
+        name: "Gold",
+        color: "from-yellow-400 to-yellow-600",
+        icon: "🥇",
+        nextTier: "Platinum",
+        needed: 20 - reservationCount,
+      };
+    if (reservationCount >= 5)
+      return {
+        name: "Silver",
+        color: "from-gray-300 to-gray-500",
+        icon: "🥈",
+        nextTier: "Gold",
+        needed: 10 - reservationCount,
+      };
+    return {
+      name: "Bronze",
+      color: "from-orange-400 to-orange-600",
+      icon: "🥉",
+      nextTier: "Silver",
+      needed: 5 - reservationCount,
+    };
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   if (loading) {
@@ -94,10 +130,10 @@ export default function Profile() {
   const membershipInfo = getMembershipTier(reservations.length);
   const today = new Date().toISOString().split("T")[0];
   const upcomingReservations = reservations.filter(
-    r => r.date >= today && r.status?.toLowerCase() !== "cancelled"
+    (r) => r.date >= today && r.status?.toLowerCase() !== "cancelled"
   );
   const confirmedReservations = reservations.filter(
-    r => r.status?.toLowerCase() === "confirmed"
+    (r) => r.status?.toLowerCase() === "confirmed"
   );
   const recentReservations = reservations.slice(0, 3);
 
@@ -112,7 +148,9 @@ export default function Profile() {
               className="flex items-center gap-2 text-gray-600 hover:text-purple-600 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium hidden sm:inline">Back to Dashboard</span>
+              <span className="font-medium hidden sm:inline">
+                Back to Dashboard
+              </span>
             </button>
 
             <div className="flex items-center gap-2">
@@ -146,7 +184,7 @@ export default function Profile() {
               <div className="w-32 h-32 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center shadow-xl border-4 border-white">
                 <User className="w-16 h-16 text-purple-600" />
               </div>
-              
+
               <div className="flex-1 text-center sm:text-left">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                   {userData?.full_name || userData?.name || "Guest User"}
@@ -185,30 +223,44 @@ export default function Profile() {
                 <Award className="w-6 h-6 text-purple-600" />
                 <h2 className="text-xl font-bold text-gray-900">Membership</h2>
               </div>
-              
-              <div className={`bg-gradient-to-br ${membershipInfo.color} rounded-xl p-6 text-white mb-4`}>
+
+              <div
+                className={`bg-gradient-to-br ${membershipInfo.color} rounded-xl p-6 text-white mb-4`}
+              >
                 <div className="text-4xl mb-2">{membershipInfo.icon}</div>
-                <div className="text-2xl font-bold mb-1">{membershipInfo.name}</div>
-                <div className="text-sm opacity-90">Member ID: #{userData?.id?.slice(-6) || "000000"}</div>
+                <div className="text-2xl font-bold mb-1">
+                  {membershipInfo.name}
+                </div>
+                <div className="text-sm opacity-90">
+                  Member ID: #{userData?.id?.slice(-6) || "000000"}
+                </div>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Total Reservations</span>
-                  <span className="text-2xl font-bold text-purple-600">{reservations.length}</span>
+                  <span className="text-2xl font-bold text-purple-600">
+                    {reservations.length}
+                  </span>
                 </div>
-                
+
                 {membershipInfo.nextTier && (
                   <div>
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                       <span>Next: {membershipInfo.nextTier}</span>
-                      <span className="font-semibold">{membershipInfo.needed} more</span>
+                      <span className="font-semibold">
+                        {membershipInfo.needed} more
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-pink-500 to-purple-600 h-2 rounded-full transition-all"
-                        style={{ 
-                          width: `${(reservations.length / (reservations.length + membershipInfo.needed)) * 100}%` 
+                        style={{
+                          width: `${
+                            (reservations.length /
+                              (reservations.length + membershipInfo.needed)) *
+                            100
+                          }%`,
                         }}
                       ></div>
                     </div>
@@ -223,22 +275,26 @@ export default function Profile() {
                 <TrendingUp className="w-6 h-6 text-purple-600" />
                 <h2 className="text-xl font-bold text-gray-900">Quick Stats</h2>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-purple-600" />
                     <span className="text-gray-700">Total Bookings</span>
                   </div>
-                  <span className="text-xl font-bold text-purple-600">{reservations.length}</span>
+                  <span className="text-xl font-bold text-purple-600">
+                    {reservations.length}
+                  </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Star className="w-5 h-5 text-green-600" />
                     <span className="text-gray-700">Confirmed</span>
                   </div>
-                  <span className="text-xl font-bold text-green-600">{confirmedReservations.length}</span>
+                  <span className="text-xl font-bold text-green-600">
+                    {confirmedReservations.length}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
@@ -246,7 +302,9 @@ export default function Profile() {
                     <Clock className="w-5 h-5 text-blue-600" />
                     <span className="text-gray-700">Upcoming</span>
                   </div>
-                  <span className="text-xl font-bold text-blue-600">{upcomingReservations.length}</span>
+                  <span className="text-xl font-bold text-blue-600">
+                    {upcomingReservations.length}
+                  </span>
                 </div>
               </div>
             </div>
@@ -259,14 +317,18 @@ export default function Profile() {
                   onClick={() => navigate("/dashboard")}
                   className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-md transition-all"
                 >
-                  <span className="font-medium text-gray-700">Book New Table</span>
+                  <span className="font-medium text-gray-700">
+                    Book New Table
+                  </span>
                   <ChevronRight className="w-5 h-5 text-purple-500" />
                 </button>
                 <button
                   onClick={() => navigate("/my-reservations")}
                   className="w-full flex items-center justify-between p-3 bg-white rounded-lg hover:shadow-md transition-all"
                 >
-                  <span className="font-medium text-gray-700">View All Reservations</span>
+                  <span className="font-medium text-gray-700">
+                    View All Reservations
+                  </span>
                   <ChevronRight className="w-5 h-5 text-purple-500" />
                 </button>
               </div>
@@ -279,7 +341,9 @@ export default function Profile() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <Clock className="w-6 h-6 text-purple-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Recent Reservations</h2>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Recent Reservations
+                  </h2>
                 </div>
                 <button
                   onClick={() => navigate("/my-reservations")}
@@ -299,8 +363,12 @@ export default function Profile() {
               {recentReservations.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">📅</div>
-                  <h3 className="text-xl font-bold text-gray-700 mb-2">No reservations yet</h3>
-                  <p className="text-gray-500 mb-4">Start exploring restaurants and make your first reservation!</p>
+                  <h3 className="text-xl font-bold text-gray-700 mb-2">
+                    No reservations yet
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Start exploring restaurants and make your first reservation!
+                  </p>
                   <button
                     onClick={() => navigate("/dashboard")}
                     className="px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg transition-all"
@@ -330,16 +398,22 @@ export default function Profile() {
                             </p>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-sm font-semibold w-fit ${
-                          reservation.status?.toLowerCase() === "confirmed" ? "bg-green-100 text-green-700" :
-                          reservation.status?.toLowerCase() === "cancelled" ? "bg-red-100 text-red-700" :
-                          reservation.status?.toLowerCase() === "pending" ? "bg-yellow-100 text-yellow-700" :
-                          "bg-blue-100 text-blue-700"
-                        }`}>
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-semibold w-fit ${
+                            reservation.status?.toLowerCase() === "confirmed"
+                              ? "bg-green-100 text-green-700"
+                              : reservation.status?.toLowerCase() ===
+                                "cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : reservation.status?.toLowerCase() === "pending"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
                           {reservation.status}
                         </span>
                       </div>
-                      
+
                       <div className="grid sm:grid-cols-3 gap-3 text-sm text-gray-600">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />

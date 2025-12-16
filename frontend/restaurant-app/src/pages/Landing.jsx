@@ -1,3 +1,7 @@
+// Restaurant partner landing page showcasing TableTreats platform features and benefits
+// Includes hero section with background image, feature cards explaining platform capabilities
+// Provides step-by-step onboarding guide, call-to-action sections, and navigation to signin/signup
+
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {

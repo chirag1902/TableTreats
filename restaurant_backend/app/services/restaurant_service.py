@@ -1,4 +1,9 @@
-# app/services/file_service.py
+"""
+Restaurant service utilities for file handling.
+Manages image uploads/downloads/deletion using MongoDB GridFS storage.
+"""
+
+
 from fastapi import UploadFile, HTTPException
 from app.database import fs
 from bson import ObjectId

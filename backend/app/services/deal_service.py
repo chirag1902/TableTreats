@@ -1,3 +1,8 @@
+"""
+Deal/promotion service for managing restaurant deals and promotions.
+Handles fetching active deals and checking deal applicability based on date, time, and day of week.
+"""
+
 from database import Restaurant_db
 from bson import ObjectId
 from typing import List, Dict

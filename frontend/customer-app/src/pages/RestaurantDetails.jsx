@@ -1,4 +1,9 @@
 // src/pages/RestaurantDetails.jsx
+
+// Detailed restaurant view page with image gallery, menu/ambiance photos, and operating hours
+// Displays active deals/promotions and includes booking modal for table reservations
+// Handles real-time availability checking, seating area selection, and reservation creation
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {

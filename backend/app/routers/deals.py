@@ -1,4 +1,8 @@
 # routers/deals.py
+"""
+Deals and promotions router.
+Provides endpoints for retrieving restaurant deals and checking deal applicability for reservations.
+"""
 
 from fastapi import APIRouter, HTTPException
 from services import deal_service

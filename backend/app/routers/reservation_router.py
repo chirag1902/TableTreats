@@ -1,4 +1,11 @@
 # routers/reservation_router.py
+
+"""
+Reservation and billing router.
+Handles reservation creation, availability checking, bill retrieval, and payment processing for customers.
+"""
+
+
 from fastapi import APIRouter, HTTPException, Depends
 from schemas.reservation_schema import (
     ReservationCreate,

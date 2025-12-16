@@ -1,20 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Calendar, Clock, Users, Search, Filter, 
-  CheckCircle, XCircle, AlertCircle, Phone,
-  Mail, MapPin, ChevronLeft, Download,
-  TrendingUp, DollarSign, User
-} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Calendar,
+  Clock,
+  Users,
+  Search,
+  Filter,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Phone,
+  Mail,
+  MapPin,
+  ChevronLeft,
+  Download,
+  TrendingUp,
+  DollarSign,
+  User,
+} from "lucide-react";
 
 export default function RestaurantReservations() {
   const navigate = useNavigate();
   const [reservations, setReservations] = useState([]);
   const [filteredReservations, setFilteredReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('today');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("today");
 
   // Mock data - replace with actual API call
   useEffect(() => {
@@ -32,7 +44,7 @@ export default function RestaurantReservations() {
             guests: 4,
             status: "confirmed",
             specialRequests: "Window seat preferred",
-            createdAt: "2025-01-10T10:30:00"
+            createdAt: "2025-01-10T10:30:00",
           },
           {
             id: 2,
@@ -44,7 +56,7 @@ export default function RestaurantReservations() {
             guests: 2,
             status: "pending",
             specialRequests: "Anniversary celebration",
-            createdAt: "2025-01-14T15:20:00"
+            createdAt: "2025-01-14T15:20:00",
           },
           {
             id: 3,
@@ -56,7 +68,7 @@ export default function RestaurantReservations() {
             guests: 6,
             status: "confirmed",
             specialRequests: "High chair needed",
-            createdAt: "2025-01-12T09:15:00"
+            createdAt: "2025-01-12T09:15:00",
           },
           {
             id: 4,
@@ -68,7 +80,7 @@ export default function RestaurantReservations() {
             guests: 3,
             status: "pending",
             specialRequests: "",
-            createdAt: "2025-01-14T18:45:00"
+            createdAt: "2025-01-14T18:45:00",
           },
           {
             id: 5,
@@ -80,7 +92,7 @@ export default function RestaurantReservations() {
             guests: 5,
             status: "cancelled",
             specialRequests: "Outdoor seating",
-            createdAt: "2025-01-11T14:30:00"
+            createdAt: "2025-01-11T14:30:00",
           },
           {
             id: 6,
@@ -92,7 +104,7 @@ export default function RestaurantReservations() {
             guests: 2,
             status: "confirmed",
             specialRequests: "Gluten-free options",
-            createdAt: "2025-01-13T11:20:00"
+            createdAt: "2025-01-13T11:20:00",
           },
           {
             id: 7,
@@ -104,7 +116,7 @@ export default function RestaurantReservations() {
             guests: 8,
             status: "pending",
             specialRequests: "Birthday celebration - need cake service",
-            createdAt: "2025-01-14T16:10:00"
+            createdAt: "2025-01-14T16:10:00",
           },
           {
             id: 8,
@@ -116,8 +128,8 @@ export default function RestaurantReservations() {
             guests: 4,
             status: "completed",
             specialRequests: "",
-            createdAt: "2025-01-10T08:45:00"
-          }
+            createdAt: "2025-01-10T08:45:00",
+          },
         ];
         setReservations(mockReservations);
         setFilteredReservations(mockReservations);
@@ -133,26 +145,27 @@ export default function RestaurantReservations() {
     let filtered = reservations;
 
     // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(r => r.status === statusFilter);
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((r) => r.status === statusFilter);
     }
 
     // Date filter
-    const today = new Date().toISOString().split('T')[0];
-    if (dateFilter === 'today') {
-      filtered = filtered.filter(r => r.date === today);
-    } else if (dateFilter === 'upcoming') {
-      filtered = filtered.filter(r => r.date >= today);
-    } else if (dateFilter === 'past') {
-      filtered = filtered.filter(r => r.date < today);
+    const today = new Date().toISOString().split("T")[0];
+    if (dateFilter === "today") {
+      filtered = filtered.filter((r) => r.date === today);
+    } else if (dateFilter === "upcoming") {
+      filtered = filtered.filter((r) => r.date >= today);
+    } else if (dateFilter === "past") {
+      filtered = filtered.filter((r) => r.date < today);
     }
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(r => 
-        r.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.phone.includes(searchQuery)
+      filtered = filtered.filter(
+        (r) =>
+          r.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.phone.includes(searchQuery)
       );
     }
 
@@ -160,35 +173,35 @@ export default function RestaurantReservations() {
   }, [reservations, statusFilter, dateFilter, searchQuery]);
 
   const handleStatusChange = (id, newStatus) => {
-    setReservations(reservations.map(r => 
-      r.id === id ? { ...r, status: newStatus } : r
-    ));
+    setReservations(
+      reservations.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+    );
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-700 border-green-300';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'cancelled':
-        return 'bg-red-100 text-red-700 border-red-300';
-      case 'completed':
-        return 'bg-blue-100 text-blue-700 border-blue-300';
+      case "confirmed":
+        return "bg-green-100 text-green-700 border-green-300";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700 border-yellow-300";
+      case "cancelled":
+        return "bg-red-100 text-red-700 border-red-300";
+      case "completed":
+        return "bg-blue-100 text-blue-700 border-blue-300";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300';
+        return "bg-gray-100 text-gray-700 border-gray-300";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'confirmed':
+      case "confirmed":
         return <CheckCircle className="w-4 h-4" />;
-      case 'pending':
+      case "pending":
         return <AlertCircle className="w-4 h-4" />;
-      case 'cancelled':
+      case "cancelled":
         return <XCircle className="w-4 h-4" />;
-      case 'completed':
+      case "completed":
         return <CheckCircle className="w-4 h-4" />;
       default:
         return null;
@@ -197,10 +210,12 @@ export default function RestaurantReservations() {
 
   const stats = {
     total: reservations.length,
-    confirmed: reservations.filter(r => r.status === 'confirmed').length,
-    pending: reservations.filter(r => r.status === 'pending').length,
-    cancelled: reservations.filter(r => r.status === 'cancelled').length,
-    totalGuests: reservations.filter(r => r.status === 'confirmed').reduce((sum, r) => sum + r.guests, 0)
+    confirmed: reservations.filter((r) => r.status === "confirmed").length,
+    pending: reservations.filter((r) => r.status === "pending").length,
+    cancelled: reservations.filter((r) => r.status === "cancelled").length,
+    totalGuests: reservations
+      .filter((r) => r.status === "confirmed")
+      .reduce((sum, r) => sum + r.guests, 0),
   };
 
   if (loading) {
@@ -222,14 +237,18 @@ export default function RestaurantReservations() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate("/dashboard")}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-6 h-6 text-gray-600" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Reservations</h1>
-                <p className="text-sm text-gray-500">Manage your table bookings</p>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Reservations
+                </h1>
+                <p className="text-sm text-gray-500">
+                  Manage your table bookings
+                </p>
               </div>
             </div>
 
@@ -249,7 +268,9 @@ export default function RestaurantReservations() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <span className="text-sm text-green-600 font-semibold">Total</span>
+              <span className="text-sm text-green-600 font-semibold">
+                Total
+              </span>
             </div>
             <h3 className="text-gray-600 text-sm mb-1">All Reservations</h3>
             <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
@@ -260,10 +281,14 @@ export default function RestaurantReservations() {
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <span className="text-sm text-green-600 font-semibold">+{stats.confirmed}</span>
+              <span className="text-sm text-green-600 font-semibold">
+                +{stats.confirmed}
+              </span>
             </div>
             <h3 className="text-gray-600 text-sm mb-1">Confirmed</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.confirmed}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {stats.confirmed}
+            </p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-lg">
@@ -271,7 +296,9 @@ export default function RestaurantReservations() {
               <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
                 <AlertCircle className="w-6 h-6 text-white" />
               </div>
-              <span className="text-sm text-yellow-600 font-semibold">Pending</span>
+              <span className="text-sm text-yellow-600 font-semibold">
+                Pending
+              </span>
             </div>
             <h3 className="text-gray-600 text-sm mb-1">Awaiting Response</h3>
             <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
@@ -282,10 +309,14 @@ export default function RestaurantReservations() {
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
                 <Users className="w-6 h-6 text-white" />
               </div>
-              <span className="text-sm text-purple-600 font-semibold">Guests</span>
+              <span className="text-sm text-purple-600 font-semibold">
+                Guests
+              </span>
             </div>
             <h3 className="text-gray-600 text-sm mb-1">Expected Guests</h3>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalGuests}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {stats.totalGuests}
+            </p>
           </div>
         </div>
 
@@ -341,20 +372,28 @@ export default function RestaurantReservations() {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold text-gray-900">
-              {filteredReservations.length} Reservation{filteredReservations.length !== 1 ? 's' : ''}
+              {filteredReservations.length} Reservation
+              {filteredReservations.length !== 1 ? "s" : ""}
             </h2>
           </div>
 
           {filteredReservations.length === 0 ? (
             <div className="p-12 text-center">
               <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No reservations found</h3>
-              <p className="text-gray-500">Try adjusting your filters or search query</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No reservations found
+              </h3>
+              <p className="text-gray-500">
+                Try adjusting your filters or search query
+              </p>
             </div>
           ) : (
             <div className="divide-y">
               {filteredReservations.map((reservation) => (
-                <div key={reservation.id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div
+                  key={reservation.id}
+                  className="p-6 hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     {/* Customer Info */}
                     <div className="flex-1">
@@ -391,7 +430,9 @@ export default function RestaurantReservations() {
                         <Calendar className="w-5 h-5 text-pink-500" />
                         <div>
                           <div className="text-xs text-gray-500">Date</div>
-                          <div className="font-semibold">{reservation.date}</div>
+                          <div className="font-semibold">
+                            {reservation.date}
+                          </div>
                         </div>
                       </div>
 
@@ -399,7 +440,9 @@ export default function RestaurantReservations() {
                         <Clock className="w-5 h-5 text-purple-500" />
                         <div>
                           <div className="text-xs text-gray-500">Time</div>
-                          <div className="font-semibold">{reservation.time}</div>
+                          <div className="font-semibold">
+                            {reservation.time}
+                          </div>
                         </div>
                       </div>
 
@@ -407,29 +450,40 @@ export default function RestaurantReservations() {
                         <Users className="w-5 h-5 text-blue-500" />
                         <div>
                           <div className="text-xs text-gray-500">Guests</div>
-                          <div className="font-semibold">{reservation.guests}</div>
+                          <div className="font-semibold">
+                            {reservation.guests}
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Status & Actions */}
                     <div className="flex flex-col gap-3">
-                      <span className={`px-4 py-2 rounded-full text-sm font-semibold border-2 flex items-center gap-2 justify-center ${getStatusColor(reservation.status)}`}>
+                      <span
+                        className={`px-4 py-2 rounded-full text-sm font-semibold border-2 flex items-center gap-2 justify-center ${getStatusColor(
+                          reservation.status
+                        )}`}
+                      >
                         {getStatusIcon(reservation.status)}
-                        {reservation.status.charAt(0).toUpperCase() + reservation.status.slice(1)}
+                        {reservation.status.charAt(0).toUpperCase() +
+                          reservation.status.slice(1)}
                       </span>
 
-                      {reservation.status === 'pending' && (
+                      {reservation.status === "pending" && (
                         <div className="flex gap-2">
                           <button
-                            onClick={() => handleStatusChange(reservation.id, 'confirmed')}
+                            onClick={() =>
+                              handleStatusChange(reservation.id, "confirmed")
+                            }
                             className="flex-1 p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                             title="Confirm"
                           >
                             <CheckCircle className="w-5 h-5 mx-auto" />
                           </button>
                           <button
-                            onClick={() => handleStatusChange(reservation.id, 'cancelled')}
+                            onClick={() =>
+                              handleStatusChange(reservation.id, "cancelled")
+                            }
                             className="flex-1 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                             title="Cancel"
                           >

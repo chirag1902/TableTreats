@@ -1,4 +1,9 @@
 // src/pages/SignUp.jsx
+
+// Customer registration page with full name, email, and password fields
+// Validates form inputs including password confirmation and redirects to login after successful signup
+// Includes password visibility toggles
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";

@@ -1,4 +1,9 @@
 # main.py
+"""
+FastAPI application entry point.
+Configures CORS, registers API routers, and defines root/health endpoints.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth_customer, customer_restaurant_router, reservation_router, deals

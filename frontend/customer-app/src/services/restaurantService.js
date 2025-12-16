@@ -1,4 +1,9 @@
 // src/services/restaurantService.js
+
+// Restaurant data fetching service providing various restaurant listing endpoints
+// Supports filtering by city, cuisine, and pagination for different restaurant categories
+// Includes functions for premium restaurants, deals, top-rated, open now, new arrivals, and search functionality
+
 import api from "./api";
 
 export const getAllRestaurants = async (params = {}) => {

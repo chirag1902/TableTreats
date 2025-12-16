@@ -1,39 +1,7 @@
-const deleteDeal = async (dealId) => {
-  if (!window.confirm("Are you sure you want to delete this deal?")) {
-    return;
-  }
+// Deal and promotion creation/management page with form for setting up restaurant offers
+// Supports percentage, flat amount, and BOGO discount types with date/time restrictions and valid days
+// Allows editing existing deals, toggling active status, and deleting deals with full CRUD operations
 
-  try {
-    setLoading(true);
-    const token = localStorage.getItem("restaurant_token");
-
-    const response = await fetch(
-      `https://tabletreats-restaurantapp.onrender.com/api/restaurant/promos/${dealId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (response.ok) {
-      setSuccess("Deal deleted successfully!");
-      await fetchDeals();
-      setTimeout(() => setSuccess(""), 3000);
-    } else if (response.status === 401) {
-      window.location.href = "/signin";
-    } else {
-      setError("Failed to delete deal");
-    }
-  } catch (err) {
-    console.error("Error deleting deal:", err);
-    setError("An error occurred while deleting the deal");
-  } finally {
-    setLoading(false);
-  }
-};
 import React, { useState, useEffect } from "react";
 import {
   ArrowLeft,
@@ -109,6 +77,43 @@ export default function CreateDealPage() {
       }
     } catch (err) {
       console.error("Error fetching deals:", err);
+    }
+  };
+
+  const deleteDeal = async (dealId) => {
+    if (!window.confirm("Are you sure you want to delete this deal?")) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("restaurant_token");
+
+      const response = await fetch(
+        `https://tabletreats-restaurantapp.onrender.com/api/restaurant/promos/${dealId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        setSuccess("Deal deleted successfully!");
+        await fetchDeals();
+        setTimeout(() => setSuccess(""), 3000);
+      } else if (response.status === 401) {
+        window.location.href = "/signin";
+      } else {
+        setError("Failed to delete deal");
+      }
+    } catch (err) {
+      console.error("Error deleting deal:", err);
+      setError("An error occurred while deleting the deal");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -188,8 +193,7 @@ export default function CreateDealPage() {
           formData.discount_type === "bogo"
             ? null
             : parseInt(formData.discount_value),
-        valid_days: formData.valid_days.map((i) =>
-        daysOfWeek[i].toLowerCase()),
+        valid_days: formData.valid_days.map((i) => daysOfWeek[i].toLowerCase()),
         time_start: formData.time_start,
         time_end: formData.time_end,
         start_date: formData.start_date,
@@ -328,8 +332,9 @@ export default function CreateDealPage() {
       description: deal.description,
       discount_type: deal.discount_type,
       discount_value: deal.discount_value || "",
-      valid_days: (deal.valid_days || []).map(day =>
-      daysOfWeek.findIndex(d => d.toLowerCase() === day.toLowerCase())),
+      valid_days: (deal.valid_days || []).map((day) =>
+        daysOfWeek.findIndex((d) => d.toLowerCase() === day.toLowerCase())
+      ),
       time_start: deal.time_start || "00:00",
       time_end: deal.time_end || "23:59",
       start_date: deal.start_date || "",

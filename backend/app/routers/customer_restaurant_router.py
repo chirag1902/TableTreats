@@ -1,3 +1,8 @@
+"""
+Customer-facing restaurant browsing router.
+Provides endpoints for discovering restaurants by various criteria and retrieving restaurant images.
+"""
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from services import customer_restaurant_service

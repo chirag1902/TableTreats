@@ -1,3 +1,7 @@
+// Landing page component showcasing restaurant booking platform features and benefits
+// Includes hero section with search, feature highlights, how-it-works guide, and sample restaurant cards
+// Provides navigation to login/signup and displays platform statistics and visual demos
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logoImage from "../assets/logo.png";
@@ -129,14 +133,16 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <img 
-                src={logoImage} 
-                alt="Tabletreats Logo" 
+              <img
+                src={logoImage}
+                alt="Tabletreats Logo"
                 className="w-12 h-12 object-contain"
               />
-              <div className={`text-2xl font-bold transition-colors ${
-                scrollY > 50 ? "text-gray-900" : "text-white"
-              }`}>
+              <div
+                className={`text-2xl font-bold transition-colors ${
+                  scrollY > 50 ? "text-gray-900" : "text-white"
+                }`}
+              >
                 Tabletreats
               </div>
             </div>
@@ -490,9 +496,9 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <img 
-                  src={logoImage} 
-                  alt="Tabletreats Logo" 
+                <img
+                  src={logoImage}
+                  alt="Tabletreats Logo"
                   className="w-10 h-10 object-contain"
                 />
                 <div className="text-2xl font-bold">Tabletreats</div>

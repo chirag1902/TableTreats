@@ -1,4 +1,9 @@
 // src/services/authService.js
+
+// Authentication service for customer sign up, login, and logout functionality
+// Manages JWT token storage and automatic injection into API request headers
+// Handles error formatting and user data extraction from authentication responses
+
 import api from "./api";
 
 export const signUp = async (userData) => {

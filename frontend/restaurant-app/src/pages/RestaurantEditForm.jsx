@@ -1,25 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { getRestaurantProfile, updateRestaurantProfile } from '../api/restaurant';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowRight, ArrowLeft, Check, Upload, X, 
-  MapPin, Phone, Clock, Utensils, Music, 
-  Wine, Wifi, Car, UtensilsCrossed, Home
-} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  getRestaurantProfile,
+  updateRestaurantProfile,
+} from "../api/restaurant";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  Upload,
+  X,
+  MapPin,
+  Phone,
+  Clock,
+  Utensils,
+  Music,
+  Wine,
+  Wifi,
+  Car,
+  UtensilsCrossed,
+  Home,
+} from "lucide-react";
 
 export default function RestaurantEditForm() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    restaurantName: '',
-    address: '',
-    city: '',
-    zipcode: '',
-    phone: '',
-    description: '',
+    restaurantName: "",
+    address: "",
+    city: "",
+    zipcode: "",
+    phone: "",
+    description: "",
     thumbnail: null,
     thumbnailPreview: null,
     ambiancePhotos: [],
@@ -27,68 +42,68 @@ export default function RestaurantEditForm() {
     menuPhotos: [],
     menuPhotosPreview: [],
     hours: {
-      monday: { open: '09:00', close: '22:00', closed: false },
-      tuesday: { open: '09:00', close: '22:00', closed: false },
-      wednesday: { open: '09:00', close: '22:00', closed: false },
-      thursday: { open: '09:00', close: '22:00', closed: false },
-      friday: { open: '09:00', close: '23:00', closed: false },
-      saturday: { open: '09:00', close: '23:00', closed: false },
-      sunday: { open: '10:00', close: '21:00', closed: false }
+      monday: { open: "09:00", close: "22:00", closed: false },
+      tuesday: { open: "09:00", close: "22:00", closed: false },
+      wednesday: { open: "09:00", close: "22:00", closed: false },
+      thursday: { open: "09:00", close: "22:00", closed: false },
+      friday: { open: "09:00", close: "23:00", closed: false },
+      saturday: { open: "09:00", close: "23:00", closed: false },
+      sunday: { open: "10:00", close: "21:00", closed: false },
     },
     cuisine: [],
-    features: []
+    features: [],
   });
 
   const totalSteps = 4;
 
   const cuisineOptions = [
-    { name: 'Italian', emoji: '🍝' },
-    { name: 'American', emoji: '🍔' },
-    { name: 'Japanese', emoji: '🍣' },
-    { name: 'Mexican', emoji: '🌮' },
-    { name: 'Indian', emoji: '🍛' },
-    { name: 'Chinese', emoji: '🥡' },
-    { name: 'Thai', emoji: '🍜' },
-    { name: 'Mediterranean', emoji: '🥙' },
-    { name: 'French', emoji: '🥐' },
-    { name: 'Korean', emoji: '🍲' },
-    { name: 'Spanish', emoji: '🥘' },
-    { name: 'Greek', emoji: '🧆' }
+    { name: "Italian", emoji: "🍝" },
+    { name: "American", emoji: "🍔" },
+    { name: "Japanese", emoji: "🍣" },
+    { name: "Mexican", emoji: "🌮" },
+    { name: "Indian", emoji: "🍛" },
+    { name: "Chinese", emoji: "🥡" },
+    { name: "Thai", emoji: "🍜" },
+    { name: "Mediterranean", emoji: "🥙" },
+    { name: "French", emoji: "🥐" },
+    { name: "Korean", emoji: "🍲" },
+    { name: "Spanish", emoji: "🥘" },
+    { name: "Greek", emoji: "🧆" },
   ];
 
   const featureOptions = [
-    { name: 'Outdoor Seating', icon: Home },
-    { name: 'Live Music', icon: Music },
-    { name: 'Alcohol', icon: Wine },
-    { name: 'WiFi', icon: Wifi },
-    { name: 'Parking', icon: Car },
-    { name: 'Vegetarian Options', icon: UtensilsCrossed },
-    { name: 'Vegan Options', icon: Utensils },
-    { name: 'Gluten-Free Options', icon: Utensils },
-    { name: 'Pet Friendly', icon: Home },
-    { name: 'Delivery Available', icon: Car },
-    { name: 'Takeout Available', icon: Home },
-    { name: 'Reservations Required', icon: Clock }
+    { name: "Outdoor Seating", icon: Home },
+    { name: "Live Music", icon: Music },
+    { name: "Alcohol", icon: Wine },
+    { name: "WiFi", icon: Wifi },
+    { name: "Parking", icon: Car },
+    { name: "Vegetarian Options", icon: UtensilsCrossed },
+    { name: "Vegan Options", icon: Utensils },
+    { name: "Gluten-Free Options", icon: Utensils },
+    { name: "Pet Friendly", icon: Home },
+    { name: "Delivery Available", icon: Car },
+    { name: "Takeout Available", icon: Home },
+    { name: "Reservations Required", icon: Clock },
   ];
 
   useEffect(() => {
     const fetchRestaurantData = async () => {
-      const token = localStorage.getItem('restaurant_token');
+      const token = localStorage.getItem("restaurant_token");
       if (!token) {
-        navigate('/signin');
+        navigate("/signin");
         return;
       }
 
       try {
         const data = await getRestaurantProfile();
-        
+
         setFormData({
-          restaurantName: data.name || '',
-          address: data.address || '',
-          city: data.city || '',
-          zipcode: data.zipcode || '',
-          phone: data.phone || '',
-          description: data.description || '',
+          restaurantName: data.name || "",
+          address: data.address || "",
+          city: data.city || "",
+          zipcode: data.zipcode || "",
+          phone: data.phone || "",
+          description: data.description || "",
           thumbnail: null,
           thumbnailPreview: data.thumbnail || null,
           ambiancePhotos: [],
@@ -97,12 +112,11 @@ export default function RestaurantEditForm() {
           menuPhotosPreview: data.menuPhotos || [],
           hours: data.hours || formData.hours,
           cuisine: data.cuisine || [],
-          features: data.features || []
+          features: data.features || [],
         });
-        
       } catch (error) {
-        console.error('Failed to fetch restaurant data:', error);
-        setError('Failed to load restaurant data');
+        console.error("Failed to fetch restaurant data:", error);
+        setError("Failed to load restaurant data");
       } finally {
         setLoading(false);
       }
@@ -118,42 +132,60 @@ export default function RestaurantEditForm() {
 
   const handleFileUpload = (e, type) => {
     const files = Array.from(e.target.files);
-    if (type === 'thumbnail') {
-      setFormData({ 
-        ...formData, 
+    if (type === "thumbnail") {
+      setFormData({
+        ...formData,
         thumbnail: files[0],
-        thumbnailPreview: URL.createObjectURL(files[0])
+        thumbnailPreview: URL.createObjectURL(files[0]),
       });
-    } else if (type === 'ambiance') {
+    } else if (type === "ambiance") {
       const newPhotos = [...formData.ambiancePhotos, ...files];
-      const newPreviews = [...formData.ambiancePhotosPreview, ...files.map(f => URL.createObjectURL(f))];
-      setFormData({ 
-        ...formData, 
+      const newPreviews = [
+        ...formData.ambiancePhotosPreview,
+        ...files.map((f) => URL.createObjectURL(f)),
+      ];
+      setFormData({
+        ...formData,
         ambiancePhotos: newPhotos,
-        ambiancePhotosPreview: newPreviews
+        ambiancePhotosPreview: newPreviews,
       });
-    } else if (type === 'menu') {
+    } else if (type === "menu") {
       const newPhotos = [...formData.menuPhotos, ...files];
-      const newPreviews = [...formData.menuPhotosPreview, ...files.map(f => URL.createObjectURL(f))];
-      setFormData({ 
-        ...formData, 
+      const newPreviews = [
+        ...formData.menuPhotosPreview,
+        ...files.map((f) => URL.createObjectURL(f)),
+      ];
+      setFormData({
+        ...formData,
         menuPhotos: newPhotos,
-        menuPhotosPreview: newPreviews
+        menuPhotosPreview: newPreviews,
       });
     }
   };
 
   const removePhoto = (type, index) => {
-    if (type === 'thumbnail') {
+    if (type === "thumbnail") {
       setFormData({ ...formData, thumbnail: null, thumbnailPreview: null });
-    } else if (type === 'ambiance') {
+    } else if (type === "ambiance") {
       const newPhotos = formData.ambiancePhotos.filter((_, i) => i !== index);
-      const newPreviews = formData.ambiancePhotosPreview.filter((_, i) => i !== index);
-      setFormData({ ...formData, ambiancePhotos: newPhotos, ambiancePhotosPreview: newPreviews });
-    } else if (type === 'menu') {
+      const newPreviews = formData.ambiancePhotosPreview.filter(
+        (_, i) => i !== index
+      );
+      setFormData({
+        ...formData,
+        ambiancePhotos: newPhotos,
+        ambiancePhotosPreview: newPreviews,
+      });
+    } else if (type === "menu") {
       const newPhotos = formData.menuPhotos.filter((_, i) => i !== index);
-      const newPreviews = formData.menuPhotosPreview.filter((_, i) => i !== index);
-      setFormData({ ...formData, menuPhotos: newPhotos, menuPhotosPreview: newPreviews });
+      const newPreviews = formData.menuPhotosPreview.filter(
+        (_, i) => i !== index
+      );
+      setFormData({
+        ...formData,
+        menuPhotos: newPhotos,
+        menuPhotosPreview: newPreviews,
+      });
     }
   };
 
@@ -162,14 +194,17 @@ export default function RestaurantEditForm() {
       ...formData,
       hours: {
         ...formData.hours,
-        [day]: { ...formData.hours[day], [field]: value }
-      }
+        [day]: { ...formData.hours[day], [field]: value },
+      },
     });
   };
 
   const toggleCuisine = (cuisine) => {
     if (formData.cuisine.includes(cuisine)) {
-      setFormData({ ...formData, cuisine: formData.cuisine.filter(c => c !== cuisine) });
+      setFormData({
+        ...formData,
+        cuisine: formData.cuisine.filter((c) => c !== cuisine),
+      });
     } else {
       setFormData({ ...formData, cuisine: [...formData.cuisine, cuisine] });
     }
@@ -177,7 +212,10 @@ export default function RestaurantEditForm() {
 
   const toggleFeature = (feature) => {
     if (formData.features.includes(feature)) {
-      setFormData({ ...formData, features: formData.features.filter(f => f !== feature) });
+      setFormData({
+        ...formData,
+        features: formData.features.filter((f) => f !== feature),
+      });
     } else {
       setFormData({ ...formData, features: [...formData.features, feature] });
     }
@@ -193,14 +231,17 @@ export default function RestaurantEditForm() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    setError('');
-    
+    setError("");
+
     try {
       await updateRestaurantProfile(formData);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err) {
-      console.error('Update error:', err);
-      setError(err.response?.data?.detail || 'Failed to update profile. Please try again.');
+      console.error("Update error:", err);
+      setError(
+        err.response?.data?.detail ||
+          "Failed to update profile. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -236,17 +277,23 @@ export default function RestaurantEditForm() {
           <div className="flex justify-between items-center mb-2">
             {[1, 2, 3, 4].map((step) => (
               <div key={step} className="flex items-center flex-1">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                  currentStep >= step 
-                    ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white scale-110 shadow-lg' 
-                    : 'bg-gray-200 text-gray-500'
-                }`}>
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+                    currentStep >= step
+                      ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white scale-110 shadow-lg"
+                      : "bg-gray-200 text-gray-500"
+                  }`}
+                >
                   {currentStep > step ? <Check className="w-5 h-5" /> : step}
                 </div>
                 {step < 4 && (
-                  <div className={`flex-1 h-2 mx-2 rounded-full transition-all ${
-                    currentStep > step ? 'bg-gradient-to-r from-pink-500 to-purple-600' : 'bg-gray-200'
-                  }`}></div>
+                  <div
+                    className={`flex-1 h-2 mx-2 rounded-full transition-all ${
+                      currentStep > step
+                        ? "bg-gradient-to-r from-pink-500 to-purple-600"
+                        : "bg-gray-200"
+                    }`}
+                  ></div>
                 )}
               </div>
             ))}
@@ -269,10 +316,14 @@ export default function RestaurantEditForm() {
 
           {currentStep === 1 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Basic Information</h2>
-              
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Basic Information
+              </h2>
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Restaurant Name *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Restaurant Name *
+                </label>
                 <input
                   type="text"
                   name="restaurantName"
@@ -285,7 +336,9 @@ export default function RestaurantEditForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Street Address *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Street Address *
+                </label>
                 <input
                   type="text"
                   name="address"
@@ -299,7 +352,9 @@ export default function RestaurantEditForm() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">City *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    City *
+                  </label>
                   <input
                     type="text"
                     name="city"
@@ -311,7 +366,9 @@ export default function RestaurantEditForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Zipcode *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Zipcode *
+                  </label>
                   <input
                     type="text"
                     name="zipcode"
@@ -325,7 +382,9 @@ export default function RestaurantEditForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Phone Number *
+                </label>
                 <input
                   type="tel"
                   name="phone"
@@ -338,7 +397,9 @@ export default function RestaurantEditForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Description
+                </label>
                 <textarea
                   name="description"
                   value={formData.description}
@@ -353,27 +414,42 @@ export default function RestaurantEditForm() {
 
           {currentStep === 2 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Restaurant Photos</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Restaurant Photos
+              </h2>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Cover Photo *</label>
-                <p className="text-sm text-gray-500 mb-3">This will be the main photo customers see</p>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Cover Photo *
+                </label>
+                <p className="text-sm text-gray-500 mb-3">
+                  This will be the main photo customers see
+                </p>
                 {!formData.thumbnailPreview ? (
                   <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-pink-500 transition-colors bg-gradient-to-br from-gray-50 to-purple-50">
                     <Upload className="w-12 h-12 text-gray-400 mb-2" />
-                    <span className="text-gray-600 font-medium">Click to upload cover photo</span>
-                    <span className="text-sm text-gray-400 mt-1">PNG, JPG up to 10MB</span>
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'thumbnail')} />
+                    <span className="text-gray-600 font-medium">
+                      Click to upload cover photo
+                    </span>
+                    <span className="text-sm text-gray-400 mt-1">
+                      PNG, JPG up to 10MB
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, "thumbnail")}
+                    />
                   </label>
                 ) : (
                   <div className="relative">
-                    <img 
-                      src={formData.thumbnailPreview} 
-                      alt="Thumbnail" 
+                    <img
+                      src={formData.thumbnailPreview}
+                      alt="Thumbnail"
                       className="w-full h-64 object-cover rounded-xl"
                     />
                     <button
-                      onClick={() => removePhoto('thumbnail')}
+                      onClick={() => removePhoto("thumbnail")}
                       className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                     >
                       <X className="w-4 h-4" />
@@ -383,18 +459,22 @@ export default function RestaurantEditForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Ambiance Photos</label>
-                <p className="text-sm text-gray-500 mb-3">Show the atmosphere of your restaurant (up to 6 photos)</p>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Ambiance Photos
+                </label>
+                <p className="text-sm text-gray-500 mb-3">
+                  Show the atmosphere of your restaurant (up to 6 photos)
+                </p>
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   {formData.ambiancePhotosPreview.map((photo, index) => (
                     <div key={index} className="relative">
-                      <img 
-                        src={photo} 
-                        alt={`Ambiance ${index + 1}`} 
+                      <img
+                        src={photo}
+                        alt={`Ambiance ${index + 1}`}
                         className="w-full h-32 object-cover rounded-xl"
                       />
                       <button
-                        onClick={() => removePhoto('ambiance', index)}
+                        onClick={() => removePhoto("ambiance", index)}
                         className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                       >
                         <X className="w-3 h-3" />
@@ -405,25 +485,37 @@ export default function RestaurantEditForm() {
                 {formData.ambiancePhotosPreview.length < 6 && (
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-pink-500 transition-colors">
                     <Upload className="w-8 h-8 text-gray-400 mb-1" />
-                    <span className="text-sm text-gray-600">Add ambiance photos</span>
-                    <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'ambiance')} />
+                    <span className="text-sm text-gray-600">
+                      Add ambiance photos
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleFileUpload(e, "ambiance")}
+                    />
                   </label>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Menu Photos</label>
-                <p className="text-sm text-gray-500 mb-3">Upload photos of your menu (up to 4 photos)</p>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Menu Photos
+                </label>
+                <p className="text-sm text-gray-500 mb-3">
+                  Upload photos of your menu (up to 4 photos)
+                </p>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   {formData.menuPhotosPreview.map((photo, index) => (
                     <div key={index} className="relative">
-                      <img 
-                        src={photo} 
-                        alt={`Menu ${index + 1}`} 
+                      <img
+                        src={photo}
+                        alt={`Menu ${index + 1}`}
                         className="w-full h-40 object-cover rounded-xl"
                       />
                       <button
-                        onClick={() => removePhoto('menu', index)}
+                        onClick={() => removePhoto("menu", index)}
                         className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                       >
                         <X className="w-3 h-3" />
@@ -434,8 +526,16 @@ export default function RestaurantEditForm() {
                 {formData.menuPhotosPreview.length < 4 && (
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-pink-500 transition-colors">
                     <Upload className="w-8 h-8 text-gray-400 mb-1" />
-                    <span className="text-sm text-gray-600">Add menu photos</span>
-                    <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => handleFileUpload(e, 'menu')} />
+                    <span className="text-sm text-gray-600">
+                      Add menu photos
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleFileUpload(e, "menu")}
+                    />
                   </label>
                 )}
               </div>
@@ -444,33 +544,44 @@ export default function RestaurantEditForm() {
 
           {currentStep === 3 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Operating Hours</h2>
-              
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Operating Hours
+              </h2>
+
               {Object.keys(formData.hours).map((day) => (
-                <div key={day} className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-purple-50 rounded-xl">
+                <div
+                  key={day}
+                  className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-purple-50 rounded-xl"
+                >
                   <div className="w-28">
-                    <span className="font-semibold text-gray-900 capitalize">{day}</span>
+                    <span className="font-semibold text-gray-900 capitalize">
+                      {day}
+                    </span>
                   </div>
-                  
+
                   {!formData.hours[day].closed ? (
                     <>
                       <div className="flex items-center gap-2 flex-1">
                         <input
                           type="time"
                           value={formData.hours[day].open}
-                          onChange={(e) => handleHoursChange(day, 'open', e.target.value)}
+                          onChange={(e) =>
+                            handleHoursChange(day, "open", e.target.value)
+                          }
                           className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-pink-500"
                         />
                         <span className="text-gray-500">to</span>
                         <input
                           type="time"
                           value={formData.hours[day].close}
-                          onChange={(e) => handleHoursChange(day, 'close', e.target.value)}
+                          onChange={(e) =>
+                            handleHoursChange(day, "close", e.target.value)
+                          }
                           className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-pink-500"
                         />
                       </div>
                       <button
-                        onClick={() => handleHoursChange(day, 'closed', true)}
+                        onClick={() => handleHoursChange(day, "closed", true)}
                         className="px-4 py-2 text-sm text-gray-600 hover:text-red-600 font-medium"
                       >
                         Mark Closed
@@ -478,9 +589,11 @@ export default function RestaurantEditForm() {
                     </>
                   ) : (
                     <>
-                      <div className="flex-1 text-gray-500 font-medium">Closed</div>
+                      <div className="flex-1 text-gray-500 font-medium">
+                        Closed
+                      </div>
                       <button
-                        onClick={() => handleHoursChange(day, 'closed', false)}
+                        onClick={() => handleHoursChange(day, "closed", false)}
                         className="px-4 py-2 text-sm bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:shadow-lg"
                       >
                         Set Hours
@@ -495,8 +608,12 @@ export default function RestaurantEditForm() {
           {currentStep === 4 && (
             <div className="space-y-8">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Cuisine Types</h2>
-                <p className="text-gray-600 mb-4">Select all that apply (minimum 1)</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Cuisine Types
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  Select all that apply (minimum 1)
+                </p>
                 <div className="grid grid-cols-3 gap-3">
                   {cuisineOptions.map((cuisine) => (
                     <button
@@ -504,20 +621,26 @@ export default function RestaurantEditForm() {
                       onClick={() => toggleCuisine(cuisine.name)}
                       className={`p-4 rounded-xl border-2 transition-all ${
                         formData.cuisine.includes(cuisine.name)
-                          ? 'border-pink-500 bg-gradient-to-r from-pink-50 to-purple-50 scale-105'
-                          : 'border-gray-200 hover:border-pink-300'
+                          ? "border-pink-500 bg-gradient-to-r from-pink-50 to-purple-50 scale-105"
+                          : "border-gray-200 hover:border-pink-300"
                       }`}
                     >
                       <div className="text-3xl mb-2">{cuisine.emoji}</div>
-                      <div className="text-sm font-semibold text-gray-900">{cuisine.name}</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {cuisine.name}
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Features & Amenities</h2>
-                <p className="text-gray-600 mb-4">What makes your restaurant special?</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Features & Amenities
+                </h2>
+                <p className="text-gray-600 mb-4">
+                  What makes your restaurant special?
+                </p>
                 <div className="grid grid-cols-2 gap-3">
                   {featureOptions.map((feature) => {
                     const Icon = feature.icon;
@@ -527,12 +650,20 @@ export default function RestaurantEditForm() {
                         onClick={() => toggleFeature(feature.name)}
                         className={`p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${
                           formData.features.includes(feature.name)
-                            ? 'border-pink-500 bg-gradient-to-r from-pink-50 to-purple-50'
-                            : 'border-gray-200 hover:border-pink-300'
+                            ? "border-pink-500 bg-gradient-to-r from-pink-50 to-purple-50"
+                            : "border-gray-200 hover:border-pink-300"
                         }`}
                       >
-                        <Icon className={`w-5 h-5 ${formData.features.includes(feature.name) ? 'text-pink-600' : 'text-gray-400'}`} />
-                        <span className="text-sm font-semibold text-gray-900">{feature.name}</span>
+                        <Icon
+                          className={`w-5 h-5 ${
+                            formData.features.includes(feature.name)
+                              ? "text-pink-600"
+                              : "text-gray-400"
+                          }`}
+                        />
+                        <span className="text-sm font-semibold text-gray-900">
+                          {feature.name}
+                        </span>
                         {formData.features.includes(feature.name) && (
                           <Check className="w-5 h-5 text-pink-600 ml-auto" />
                         )}
@@ -546,7 +677,7 @@ export default function RestaurantEditForm() {
 
           <div className="flex justify-between mt-8 pt-6 border-t">
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate("/dashboard")}
               className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-all"
             >
               Cancel
@@ -558,8 +689,8 @@ export default function RestaurantEditForm() {
                 disabled={currentStep === 1}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
                   currentStep === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -581,7 +712,7 @@ export default function RestaurantEditForm() {
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Check className="w-5 h-5" />
-                  {submitting ? 'Saving...' : 'Save Changes'}
+                  {submitting ? "Saving..." : "Save Changes"}
                 </button>
               )}
             </div>

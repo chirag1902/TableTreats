@@ -1,3 +1,7 @@
+// API service for restaurant authentication, profile management, and reservation operations
+// Handles restaurant signup/login with JWT token storage, profile completion with file uploads
+// Provides endpoints for fetching today's reservations, restaurant profile data, and updating restaurant information
+
 import axios from "axios";
 
 // Hardcoded API URL for production

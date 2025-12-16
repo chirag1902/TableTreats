@@ -1,4 +1,10 @@
 # app/database.py
+
+"""
+MongoDB database connection setup.
+Initializes async MongoDB client, database, GridFS bucket, and collection references.
+"""
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from app.config import MONGO_URI, DATABASE_NAME
 

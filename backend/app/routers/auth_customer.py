@@ -1,3 +1,8 @@
+"""
+Customer authentication router.
+Handles customer signup, login, and protected profile access with JWT authentication.
+"""
+
 from fastapi import APIRouter, HTTPException, Depends
 from schemas.user_schema import CustomerSignup, CustomerLogin, CustomerOut, TokenResponse
 from services import user_service

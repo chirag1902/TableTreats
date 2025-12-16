@@ -1,3 +1,8 @@
+"""
+Restaurant reservation and billing management router.
+Handles restaurant-side operations: viewing reservations, check-ins, dashboard stats, and bill management (CRUD).
+"""
+
 from fastapi import APIRouter, HTTPException, Query, Depends, status
 from typing import Optional, List
 from datetime import datetime, timedelta

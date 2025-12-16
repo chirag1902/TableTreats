@@ -1,5 +1,8 @@
 // File: src/pages/AllReservations.jsx
-// Replace the entire content of your AllReservations.jsx with this code
+
+// Complete reservation management page with filtering by status (confirmed, completed, cancelled)
+// Allows checking in customers, undoing check-ins (if no bill exists), and viewing reservation details
+// Displays customer information, special requests, bill status, and provides links to payment receipts for paid bills
 
 import React, { useState, useEffect } from "react";
 import {
