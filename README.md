@@ -68,7 +68,6 @@ TableTreats is a full-stack application designed to:
 TableTreats/
 ├── .gitignore
 ├── README.md
-├── docker-compose.yml
 ├── package.json
 ├── requirements.txt
 │
@@ -82,7 +81,6 @@ TableTreats/
 │       ├── routers/
 │       │   ├── auth_customer.py
 │       │   ├── customer_restaurant_router.py
-│       │   ├── customers.py
 │       │   ├── deals.py
 │       │   └── reservation_router.py
 │       ├── schemas/
@@ -322,6 +320,7 @@ For detailed API specifications, see [docs/api-specs.md](docs/api-specs.md)
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. Add environment variables
 7. Deploy
+
 
 
 
