@@ -221,7 +221,6 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 ✅ **Customer Backend API:** http://127.0.0.1:8000  
-📚 **API Docs:** http://127.0.0.1:8000/docs
 
 #### 2.2 Customer Frontend (Port 3000)
 
@@ -257,7 +256,6 @@ uvicorn app.main:app --reload --port 8001
 ```
 
 ✅ **Restaurant Backend API:** http://127.0.0.1:8001  
-📚 **API Docs:** http://127.0.0.1:8001/docs
 
 #### 3.2 Restaurant Frontend (Port 5173)
 
@@ -289,17 +287,6 @@ JWT_EXPIRATION_HOURS=24
 
 ---
 
-## 📚 API Documentation
-
-Both backends provide interactive API documentation via Swagger UI:
-
-- **Customer Backend API Docs:** http://127.0.0.1:8000/docs
-- **Restaurant Backend API Docs:** http://127.0.0.1:8001/docs
-
-For detailed API specifications, see [docs/api-specs.md](docs/api-specs.md)
-
----
-
 ## 🚀 Deployment
 
 ### Deploying Your Own Instance
@@ -320,6 +307,7 @@ For detailed API specifications, see [docs/api-specs.md](docs/api-specs.md)
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. Add environment variables
 7. Deploy
+
 
 
 
