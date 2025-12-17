@@ -193,7 +193,7 @@ TableTreats/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/ds2268/TableTreats.git
+git clone https://github.com/chirag1902/TableTreats.git
 cd TableTreats
 ```
 
@@ -320,6 +320,7 @@ For detailed API specifications, see [docs/api-specs.md](docs/api-specs.md)
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. Add environment variables
 7. Deploy
+
 
 
 
